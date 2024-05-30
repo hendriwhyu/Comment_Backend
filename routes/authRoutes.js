@@ -27,25 +27,23 @@ router.post(
     const { username, email, password, role } = req.body;
 
     try {
-      let user = await User.findOne({ email });
+      let user = await User.findOne({ where: { email } });
 
       if (user) {
         return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
       }
 
-      user = new User({
+      user = await User.create({
         username,
         email,
         password,
-        role: role || 'user' // Set role default sebagai "user" jika role kosong 
+        role: role || 'user' // Set role default 'user' jika user tidak di isi
       });
-
-      await user.save();
 
       const payload = {
         user: {
           id: user.id,
-          role: user.role // role termasuk dalam payload
+          role: user.role // Include role in the payload
         }
       };
 
@@ -83,18 +81,18 @@ router.post(
     const { email, password } = req.body;
 
     try {
-      let user = await User.findOne({ email });
+      let user = await User.findOne({ where: { email } });
 
       if (!user) {
         console.log('User not found');
-        return res.status(400).json({ errors: [{ msg: 'User tidak ditemukan' }] });
+        return res.status(400).json({ errors: [{ msg: 'User not found' }] });
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
         console.log('Password does not match');
-        return res.status(400).json({ errors: [{ msg: 'password salah' }] });
+        return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
       }
 
       const payload = {

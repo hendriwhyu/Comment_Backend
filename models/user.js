@@ -1,40 +1,39 @@
-const mongoose = require('mongoose');
+const { Sequelize, DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
+class User extends Model {}
+
+User.init({
   username: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   email: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true
   },
   password: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   role: {
-    type: String,
-    default: 'user'
+    type: DataTypes.STRING,
+    defaultValue: 'user'
   }
 }, {
-  collection: 'Users' // Tentukan nama koleksi di sini
+  sequelize,
+  modelName: 'User',
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
+      }
+    }
+  },
+  tableName: 'Users'
 });
 
-// Middleware untuk hashing password sebelum menyimpan
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
-module.exports = mongoose.model('User', UserSchema);
+module.exports = User;
