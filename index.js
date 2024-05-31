@@ -20,5 +20,5 @@ app.use('/api/protected', protectedRoutes);
 const PORT = process.env.PORT || 5000;
 
 connectDB.sync({ force: false }).then(() => {
-  app.listen(PORT, () => console.log(`Server berjalan pada port ${PORT}`));
+  app.listen(PORT, () => console.log(`Server berjalan pada http://localhost:${PORT}`));
 });
