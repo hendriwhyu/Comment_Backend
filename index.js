@@ -20,6 +20,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/protected', protectedRoutes);
 app.use('/api/user-join-event', require('./routes/userJointEventRoutes'));
+app.use('/api/comments', require('./routes/commentRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

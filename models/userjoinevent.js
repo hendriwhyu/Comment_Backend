@@ -14,7 +14,7 @@ UserJoinEvent.init({
     }
   },
   profileId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     references: {
       model: Profile,
       key: 'id'

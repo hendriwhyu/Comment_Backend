@@ -6,6 +6,11 @@ const User = require('./user');
 class Profile extends Model {}
 Profile.init(
   {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
     photo: {
       type: DataTypes.STRING, // URL atau path ke foto profil
       allowNull: true,
