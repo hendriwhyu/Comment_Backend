@@ -58,7 +58,7 @@ router.get('/:title', authVolunteer, async (req, res) => {
 // @desc     Create an event
 // @access   Private (only volunteer)
 router.post('/', [
-  auth, // Middleware untuk memeriksa autentikasi
+  auth, // Middleware untuk memeriksa autentikasi coysz
   [
     check('title', 'Title is required').not().isEmpty(),
     check('category', 'Category is required').not().isEmpty(),
