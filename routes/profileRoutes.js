@@ -10,11 +10,14 @@ const UserController = require('../controller/UserController');
 
 // GET profile
 router.get('/', auth, UserController.getProfileUsers);
+router.post(
+  '/',
+  [auth, [check('name', 'Name is required').not().isEmpty()]],
+  UserController.updateProfileByAuth,
+);
+router.get('/me', auth, UserController.getProfileByToken);
 
 router.get('/:id', auth, UserController.getProfileById);
-
-router.post('/', [auth, [check('name', 'Name is required').not().isEmpty()]], UserController.updateProfileByAuth);
-
 router.delete('/:id', auth, UserController.deleteProfile);
 
 module.exports = router;
