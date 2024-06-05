@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const Profile = require('../models/profile');
 const User = require('../models/user');
+const jwt = require('jsonwebtoken');
 
 const UserController = {
   // @route    GET api/profile
@@ -17,6 +18,23 @@ const UserController = {
         }
       });
       res.json(profiles);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
+  // @route    GET api/profile/me
+  // @desc     Get user by Token
+  // @access   Private
+  getUserByToken: async (req, res) => {
+    try {
+      const { token } = req.headers; // Ambil token dari header
+      const responseJWT = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findOne({ where: { id: responseJWT.user.id } }); // Cari user berdasarkan email
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+      res.json(user);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
@@ -45,6 +63,7 @@ const UserController = {
       res.status(500).send('Server error');
     }
   },
+  
   // @route    POST api/profile
   // @desc     Create or update profile
   // @access   Private
