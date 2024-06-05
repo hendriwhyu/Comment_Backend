@@ -2,12 +2,12 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const bcrypt = require('bcryptjs');
+const Profile = require('./profile');
 
 class User extends Model {}
 
 User.init(
   {
-    
     username: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -35,7 +35,6 @@ User.init(
         notEmpty: true,
         isLowercase: true,
         isUppercase: true,
-        isDecimal: true,
         min: 6,
       }
     },
@@ -58,5 +57,7 @@ User.init(
     tableName: 'Users'
   }
 );
+
+User.hasOne(Profile, { foreignKey: 'id', as: 'profile' });
 
 module.exports = User;

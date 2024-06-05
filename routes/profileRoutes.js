@@ -15,7 +15,7 @@ router.post(
   [auth, [check('name', 'Name is required').not().isEmpty()]],
   UserController.updateProfileByAuth,
 );
-router.get('/me', auth, UserController.getProfileByToken);
+router.get('/me', auth, UserController.getUserByToken);
 
 router.get('/:id', auth, UserController.getProfileById);
 router.delete('/:id', auth, UserController.deleteProfile);

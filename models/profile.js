@@ -40,22 +40,23 @@ Profile.init(
       }
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: User,
+        model: 'Users', // Refers to the table name
         key: 'id',
       },
     },
   },
   {
     sequelize,
+    timestamps: false,
     modelName: 'Profile',
     tableName: 'Profiles',
   },
 );
 
 // Membuat relasi antara Profile dan User
-Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+// Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 module.exports = Profile;

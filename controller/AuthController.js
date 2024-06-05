@@ -2,13 +2,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/user');
-const profile = require('../models/profile');
 
 const AuthController = {
   register: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ status: 'error', message: 'Validation failed', errors: errors.array() });
     }
 
     const { username, email, password, role } = req.body;
@@ -17,20 +16,22 @@ const AuthController = {
       let user = await User.findOne({ where: { email } });
 
       if (user) {
-        return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
+        return res.status(400).json({ status: 'error', message: 'User already exists' });
       }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       user = await User.create({
         username,
         email,
-        password,
-        role: role || 'user' // Set role default 'user' jika user tidak di isi
+        password: hashedPassword,
+        role: role || 'user'
       });
 
       const payload = {
         user: {
           id: user.id,
-          role: user.role // Include role in the payload
+          role: user.role
         }
       };
 
@@ -40,18 +41,19 @@ const AuthController = {
         { expiresIn: '1h' },
         (err, token) => {
           if (err) throw err;
-          res.json({ token });
+          res.json({ status: 'success', message: 'User registered successfully', data: { token } });
         }
       );
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
   },
+
   login: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ status: 'error', message: 'Validation failed', errors: errors.array() });
     }
 
     const { email, password } = req.body;
@@ -60,21 +62,19 @@ const AuthController = {
       let user = await User.findOne({ where: { email } });
 
       if (!user) {
-        console.log('User not found');
-        return res.status(400).json({ errors: [{ msg: 'User not found' }] });
+        return res.status(400).json({ status: 'error', message: 'User not found' });
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (!isMatch) {
-        console.log('Password does not match');
-        return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
+        return res.status(400).json({ status: 'error', message: 'Invalid credentials' });
       }
 
       const payload = {
         user: {
           id: user.id,
-          role: user.role // Include role in the payload
+          role: user.role
         }
       };
 
@@ -84,12 +84,12 @@ const AuthController = {
         { expiresIn: '1h' },
         (err, token) => {
           if (err) throw err;
-          res.json({ token });
+          res.json({ status: 'success', message: 'Logged in successfully', data: { token } });
         }
       );
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
   }
 };
