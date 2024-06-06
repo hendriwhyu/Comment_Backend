@@ -1,8 +1,8 @@
 {
   "development": {
     "username": "postgres",
-    "password": "",
-    "database": "capstone_comment",
+    "password": "sibcycle6",
+    "database": "capstone-comment",
     "host": "127.0.0.1",
     "dialect": "postgres"
   },

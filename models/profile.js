@@ -1,7 +1,7 @@
 'use strict';
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./user');
+const User = require('./user');  // Pastikan ini diimpor setelah User didefinisikan
 
 class Profile extends Model {}
 
@@ -44,15 +44,14 @@ Profile.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users', // Refers to the table name
+        model: 'Users',
         key: 'id',
       },
     },
   },
   {
     sequelize,
-    timestamps: false,
-    modelName: 'Profile',
+    modelName: 'Profiles',
     tableName: 'Profiles',
   }
 );
