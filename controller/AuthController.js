@@ -27,22 +27,7 @@ const AuthController = {
         role: role || 'user' // Set role default 'user' jika user tidak di isi
       });
 
-      const payload = {
-        user: {
-          id: user.id,
-          role: user.role // Include role in the payload
-        }
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' },
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
-        }
-      );
+      res.json({ status: "success", message: "User has been created" });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');

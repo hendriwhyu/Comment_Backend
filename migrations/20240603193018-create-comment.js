@@ -5,30 +5,29 @@ module.exports = {
     await queryInterface.createTable('Comments', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.UUID,
       },
       eventId: {
-        type: Sequelize.UUID
+        type: Sequelize.UUID,
       },
       content: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       profileId: {
-        type: Sequelize.UUID
+        type: Sequelize.UUID,
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
-      }
+        type: Sequelize.DATE,
+      },
     });
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Comments');
-  }
+  },
 };

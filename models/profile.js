@@ -4,6 +4,7 @@ const sequelize = require('../config/db');
 const User = require('./user');
 
 class Profile extends Model {}
+
 Profile.init(
   {
     id: {
@@ -12,7 +13,7 @@ Profile.init(
       primaryKey: true
     },
     photo: {
-      type: DataTypes.STRING, // URL atau path ke foto profil
+      type: DataTypes.STRING,
       allowNull: true,
     },
     name: {
@@ -40,10 +41,10 @@ Profile.init(
       }
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: User,
+        model: 'Users', // Should match the table name in User model
         key: 'id',
       },
     },
@@ -52,10 +53,13 @@ Profile.init(
     sequelize,
     modelName: 'Profile',
     tableName: 'Profiles',
-  },
+  }
 );
 
-// Membuat relasi antara Profile dan User
-Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-
+// Export Profile model, without the association
+Profile.associate = () => {
+  Profile.belongsTo(User, {
+      foreignKey: "userId"
+  });
+}
 module.exports = Profile;
