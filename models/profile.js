@@ -1,7 +1,7 @@
 'use strict';
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./user');  // Pastikan ini diimpor setelah User didefinisikan
+const User = require('./User'); // Pastikan ini diimpor setelah User didefinisikan
 
 class Profile extends Model {}
 
@@ -10,7 +10,7 @@ Profile.init(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
     photo: {
       type: DataTypes.STRING,
@@ -23,14 +23,14 @@ Profile.init(
         notNull: true,
         notEmpty: true,
         len: [3, 255],
-      }
+      },
     },
     headTitle: {
       type: DataTypes.STRING,
       allowNull: true,
       validate: {
         len: [0, 100],
-      }
+      },
     },
     phone: {
       type: DataTypes.STRING,
@@ -38,7 +38,7 @@ Profile.init(
       validate: {
         isNumeric: true,
         len: [0, 20],
-      }
+      },
     },
     userId: {
       type: DataTypes.UUID,
@@ -51,15 +51,12 @@ Profile.init(
   },
   {
     sequelize,
-    modelName: 'Profiles',
+    modelName: 'Profile',
     tableName: 'Profiles',
-  }
+  },
 );
 
-// Export Profile model, without the association
-Profile.associate = () => {
-  Profile.belongsTo(User, {
-      foreignKey: "userId"
-  });
-}
+// Mengatur asosiasi
+
+
 module.exports = Profile;

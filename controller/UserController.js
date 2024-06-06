@@ -7,15 +7,15 @@ const UserController = {
   // @route    GET api/profile
   // @desc     Get all profiles
   // @access   Private
-  getProfileUsers:  async (req, res) => {
+  getProfileUsers: async (req, res) => {
     try {
       const profiles = await Profile.findAll({
         attributes: ['photo', 'name', 'headTitle'],
         include: {
           model: User,
           as: 'user',
-          attributes: ['email']
-        }
+          attributes: ['email'],
+        },
       });
       res.json(profiles);
     } catch (err) {
@@ -30,11 +30,14 @@ const UserController = {
     try {
       const { token } = req.headers; // Ambil token dari header
       const responseJWT = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findOne({ where: { id: responseJWT.user.id } }); // Cari user berdasarkan email
+      const user = await User.findOne({
+        where: { id: responseJWT.user.id },
+        attributes: ['username', 'email', 'id', 'role'],
+      }); // Cari user berdasarkan email
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
       }
-      res.json(user);
+      res.json({ status: 'success', data: user });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
@@ -51,8 +54,8 @@ const UserController = {
         include: {
           model: User,
           as: 'user',
-          attributes: ['email']
-        }
+          attributes: ['email'],
+        },
       });
       if (!profile) {
         return res.status(404).json({ msg: 'Profile not found' });
@@ -63,7 +66,7 @@ const UserController = {
       res.status(500).send('Server error');
     }
   },
-  
+
   // @route    POST api/profile
   // @desc     Create or update profile
   // @access   Private
@@ -83,7 +86,7 @@ const UserController = {
         // Update existing profile
         profile = await Profile.update(
           { photo, name, headTitle, phone },
-          { where: { userId: req.user.id } }
+          { where: { userId: req.user.id } },
         );
         return res.json(profile);
       }
@@ -94,7 +97,7 @@ const UserController = {
         name,
         headTitle,
         phone,
-        userId: req.user.id
+        userId: req.user.id,
       });
 
       await profile.save();
@@ -109,19 +112,21 @@ const UserController = {
   // @access   Private
   deleteProfile: async (req, res) => {
     try {
-      const profile = await Profile.findOne({ where: { id: req.params.id, userId: req.user.id } });
-  
+      const profile = await Profile.findOne({
+        where: { id: req.params.id, userId: req.user.id },
+      });
+
       if (!profile) {
         return res.status(404).json({ msg: 'Profile not found' });
       }
-  
+
       await Profile.destroy({ where: { id: req.params.id } });
       res.json({ msg: 'Profile deleted' });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
     }
-  }
+  },
 };
 
 module.exports = UserController;

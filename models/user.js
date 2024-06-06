@@ -2,6 +2,7 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const bcrypt = require('bcryptjs');
+const Profile = require('./profile');
 
 class User extends Model {}
 
@@ -10,7 +11,7 @@ User.init(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
     username: {
       type: DataTypes.STRING,
@@ -20,7 +21,7 @@ User.init(
         notNull: true,
         notEmpty: true,
         min: 4,
-      }
+      },
     },
     email: {
       type: DataTypes.STRING,
@@ -29,7 +30,7 @@ User.init(
       validate: {
         isEmail: true,
         notEmpty: true,
-      }
+      },
     },
     password: {
       type: DataTypes.STRING,
@@ -38,7 +39,7 @@ User.init(
         notNull: true,
         notEmpty: true,
         min: 6,
-      }
+      },
     },
     role: {
       type: DataTypes.ENUM('company', 'user'),
@@ -54,12 +55,12 @@ User.init(
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }
-      }
+      },
     },
-    tableName: 'Users'
-  }
+    tableName: 'Users',
+  },
 );
 
-// Export User model, without the association
-User.hasOne(Profile, { foreignKey: 'userId', as: 'profile' });
+// Mengatur asosiasi
+
 module.exports = User;

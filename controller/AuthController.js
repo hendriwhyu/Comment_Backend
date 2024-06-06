@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/user');
-const profile = require('../models/profile');
+const Profile = require('../models/profile');
 
 const AuthController = {
   register: async (req, res) => {
@@ -17,32 +17,19 @@ const AuthController = {
       let user = await User.findOne({ where: { email } });
 
       if (user) {
-        return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
+        return res
+          .status(400)
+          .json({ errors: [{ msg: 'User already exists' }] });
       }
 
       user = await User.create({
         username,
         email,
         password,
-        role: role || 'user' // Set role default 'user' jika user tidak di isi
+        role: role || 'user', // Set role default 'user' jika user tidak di isi
       });
 
-      const payload = {
-        user: {
-          id: user.id,
-          role: user.role
-        }
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' },
-        (err, token) => {
-          if (err) throw err;
-          res.json({ status: 'success', message: 'User registered successfully', data: { token } });
-        }
-      );
+      res.json({ status: 'success', message: 'User created successfully' });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
@@ -68,14 +55,16 @@ const AuthController = {
 
       if (!isMatch) {
         console.log('Password does not match');
-        return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
+        return res
+          .status(400)
+          .json({ errors: [{ msg: 'Invalid credentials' }] });
       }
 
       const payload = {
         user: {
           id: user.id,
-          role: user.role // Include role in the payload
-        }
+          role: user.role, // Include role in the payload
+        },
       };
 
       jwt.sign(
@@ -85,7 +74,7 @@ const AuthController = {
         (err, token) => {
           if (err) throw err;
           res.json({ token });
-        }
+        },
       );
     } catch (err) {
       console.error(err.message);
@@ -101,7 +90,7 @@ const AuthController = {
       res.status(500).send('Server error');
     }
   },
-   getUserByToken: async (req, res) => {
+  getUserByToken: async (req, res) => {
     try {
       const token = req.header('token');
       if (!token) {
@@ -110,7 +99,7 @@ const AuthController = {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findByPk(decoded.user.id, {
-        include: [{ model: Profile, as: 'profile' }]
+        include: [{ model: Profile, as: 'profile' }],
       });
 
       if (!user) {
@@ -128,6 +117,5 @@ const AuthController = {
     }
   },
 };
-
 
 module.exports = AuthController;
