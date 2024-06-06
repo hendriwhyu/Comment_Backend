@@ -1,9 +1,10 @@
 'use strict';
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./user');
+const User = require('./user');  // Pastikan ini diimpor setelah User didefinisikan
 
 class Profile extends Model {}
+
 Profile.init(
   {
     id: {
@@ -43,20 +44,18 @@ Profile.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users', // Refers to the table name
+        model: 'Users',
         key: 'id',
       },
     },
   },
   {
     sequelize,
-    timestamps: false,
-    modelName: 'Profile',
+    modelName: 'Profiles',
     tableName: 'Profiles',
-  },
+  }
 );
 
-// Membuat relasi antara Profile dan User
-// Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 module.exports = Profile;

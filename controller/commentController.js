@@ -4,10 +4,10 @@ const Comment = require('../models/comment');
 exports.getAllComments = async (req, res) => {
   try {
     const comments = await Comment.findAll();
-    res.json({ status: 'success', message: 'Comments retrieved successfully', data: comments });
+    res.json(comments);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ status: 'error', message: 'Server error' });
+    res.status(500).send('Server error');
   }
 };
 
@@ -16,11 +16,13 @@ exports.createComment = async (req, res) => {
   const { eventId, content, profileId } = req.body;
 
   try {
-    const comment = await Comment.create({ eventId, content, profileId });
-    res.json({ status: 'success', message: 'Comment created successfully', data: comment });
+    const comment = new Comment
+    ({ eventId, content, profileId });
+    await comment.save();
+    res.json(comment);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ status: 'error', message: 'Server error' });
+    res.status(500).send('Server error');
   }
 };
 
@@ -32,7 +34,7 @@ exports.updateComment = async (req, res) => {
     let comment = await Comment.findByPk(req.params.id);
 
     if (!comment) {
-      return res.status(404).json({ status: 'error', message: 'Comment not found' });
+      return res.status(404).json({ msg: 'Comment not found' });
     }
 
     await Comment.update({ eventId, content, profileId }, {
@@ -41,10 +43,10 @@ exports.updateComment = async (req, res) => {
       }
     });
 
-    res.json({ status: 'success', message: 'Comment updated successfully' });
+    res.json({ msg: 'Comment updated' });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ status: 'error', message: 'Server error' });
+    res.status(500).send('Server error');
   }
 };
 
@@ -54,14 +56,14 @@ exports.deleteComment = async (req, res) => {
     const comment = await Comment.findByPk(req.params.id);
 
     if (!comment) {
-      return res.status(404).json({ status: 'error', message: 'Comment not found' });
+      return res.status(404).json({ msg: 'Comment not found' });
     }
 
     await Comment.destroy({ where: { id: req.params.id } });
 
-    res.json({ status: 'success', message: 'Comment removed successfully' });
+    res.json({ msg: 'Comment removed' });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ status: 'error', message: 'Server error' });
+    res.status(500).send('Server error');
   }
 };
