@@ -1,27 +1,60 @@
 const { validationResult } = require('express-validator');
 const Profile = require('../models/profile');
 const User = require('../models/user');
+const jwt = require('jsonwebtoken');
 
 const UserController = {
   // @route    GET api/profile
   // @desc     Get all profiles
   // @access   Private
-  getProfileUsers:  async (req, res) => {
+  getProfileUsers: async (req, res) => {
     try {
       const profiles = await Profile.findAll({
         attributes: ['photo', 'name', 'headTitle'],
         include: {
           model: User,
           as: 'user',
-          attributes: ['email']
-        }
+          attributes: ['email'],
+        },
       });
-      res.json(profiles);
+      res.json({
+        status: 'success',
+        message: 'Profiles retrieved successfully',
+        data: profiles,
+      });
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
   },
+
+  // @route    GET api/profile/me
+  // @desc     Get user by Token
+  // @access   Private
+  getUserByToken: async (req, res) => {
+    try {
+      const { token } = req.headers; // Ambil token dari header
+      const responseJWT = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findOne({
+        where: { id: responseJWT.user.id },
+        include: { model: Profile, as: 'profile', attributes: ['photo', 'name', 'headTitle'] },
+      }); // Cari user berdasarkan id
+      if (!user) {
+        return res
+          .status(404)
+          .json({ status: 'error', message: 'User not found' });
+      }
+      res.json({
+        status: 'success',
+        message: 'User retrieved successfully',
+        data: user,
+      });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+  },
+
   // @route    GET api/profile/:id
   // @desc     Get profile by ID
   // @access   Private
@@ -33,26 +66,36 @@ const UserController = {
         include: {
           model: User,
           as: 'user',
-          attributes: ['email']
-        }
+          attributes: ['email'],
+        },
       });
       if (!profile) {
-        return res.status(404).json({ msg: 'Profile not found' });
+        return res
+          .status(404)
+          .json({ status: 'error', message: 'Profile not found' });
       }
-      res.json(profile);
+      res.json({
+        status: 'success',
+        message: 'Profile retrieved successfully',
+        data: profile,
+      });
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
   },
+
   // @route    POST api/profile
   // @desc     Create or update profile
   // @access   Private
-  //Update profile (belum dicoba pake method PUT)
   updateProfileByAuth: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
     }
 
     const { photo, name, headTitle, phone } = req.body;
@@ -62,47 +105,59 @@ const UserController = {
 
       if (profile) {
         // Update existing profile
-        profile = await Profile.update(
+        await Profile.update(
           { photo, name, headTitle, phone },
-          { where: { userId: req.user.id } }
+          { where: { userId: req.user.id } },
         );
-        return res.json(profile);
+        return res.json({
+          status: 'success',
+          message: 'Profile updated successfully',
+          data: profile,
+        });
       }
 
       // Create new profile
-      profile = new Profile({
+      profile = await Profile.create({
         photo,
         name,
         headTitle,
         phone,
-        userId: req.user.id
+        userId: req.user.id,
       });
 
-      await profile.save();
-      res.json(profile);
+      res.json({
+        status: 'success',
+        message: 'Profile created successfully',
+        data: profile,
+      });
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
   },
+
   // @route    DELETE api/profile/:id
   // @desc     Delete profile
   // @access   Private
   deleteProfile: async (req, res) => {
     try {
-      const profile = await Profile.findOne({ where: { id: req.params.id, userId: req.user.id } });
-  
+      const profile = await Profile.findOne({
+        where: { id: req.params.id, userId: req.user.id },
+      });
+
       if (!profile) {
-        return res.status(404).json({ msg: 'Profile not found' });
+        return res
+          .status(404)
+          .json({ status: 'error', message: 'Profile not found' });
       }
-  
+
       await Profile.destroy({ where: { id: req.params.id } });
-      res.json({ msg: 'Profile deleted' });
+      res.json({ status: 'success', message: 'Profile deleted successfully' });
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
-  }
+  },
 };
 
 module.exports = UserController;

@@ -4,12 +4,14 @@ const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const protectedRoutes = require('./routes/protectedRoute'); // Import rute yang dilindungi
 const dotenv = require('dotenv');
+const cors = require('cors');
 
 dotenv.config();
 
 const app = express();
 
-// Izin Cors app.use(cors()); // Izi
+// Izin Cors
+app.use(cors()); // Izi
 
 // Init Middleware
 app.use(express.json({ extended: false }));

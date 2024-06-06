@@ -44,13 +44,14 @@ Profile.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users', // Should match the table name in User model
+        model: 'Users', // Refers to the table name
         key: 'id',
       },
     },
   },
   {
     sequelize,
+    timestamps: false,
     modelName: 'Profile',
     tableName: 'Profiles',
   }
