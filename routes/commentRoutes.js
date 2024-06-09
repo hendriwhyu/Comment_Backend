@@ -5,9 +5,10 @@ const commentController = require('../controller/commentController');
 
 // Mendapatkan semua komentar
 router.get('/', auth, commentController.getAllComments);
+router.get('/:eventId', auth, commentController.getComments)
 
 // Membuat komentar baru
-router.post('/', auth, commentController.createComment);
+router.post('/:eventId', auth, commentController.createComment);
 
 // Mengupdate komentar berdasarkan ID
 router.put('/:id', auth, commentController.updateComment);

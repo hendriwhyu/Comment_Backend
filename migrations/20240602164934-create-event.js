@@ -28,6 +28,18 @@ module.exports = {
       image: {
         type: Sequelize.STRING
       },
+      ownerId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      bookmarks: {
+        type: DataTypes.ARRAY(DataTypes.UUID),
+        defaultValue: [],
+      },
+      totalParticipants: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -35,10 +47,10 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
-      }
+      },
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Events');
+    await queryInterface.dropTable('Post');
   }
 };

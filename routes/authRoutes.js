@@ -6,6 +6,7 @@ const AuthController = require('../controller/AuthController');
 const authVolunteer = require('../middleware/authVolunteer');
 const auth = require('../middleware/auth');
 
+
 dotenv.config();
 
 // @route    POST api/auth/register

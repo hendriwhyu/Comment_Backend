@@ -30,7 +30,8 @@ UserJoinEvent.init({
   }
 }, {
   sequelize,
-  modelName: 'UserJoinEvent'
+  modelName: 'UserJoinEvent',
+  tableName: 'UserJointEvent'
 });
 
 UserJoinEvent.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });

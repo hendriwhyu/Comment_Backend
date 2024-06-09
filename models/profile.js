@@ -1,8 +1,7 @@
 'use strict';
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./User'); // Pastikan ini diimpor setelah User didefinisikan
-
+const User = require('./user')
 class Profile extends Model {}
 
 Profile.init(
@@ -53,10 +52,10 @@ Profile.init(
     sequelize,
     modelName: 'Profile',
     tableName: 'Profiles',
-  },
+  }
 );
 
-// Mengatur asosiasi
 
+Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 module.exports = Profile;

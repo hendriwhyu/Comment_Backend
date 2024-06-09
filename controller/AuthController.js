@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const User = require('../models/user');
 const Profile = require('../models/profile');
 
+
 const AuthController = {
   register: async (req, res) => {
     const errors = validationResult(req);
@@ -92,28 +93,18 @@ const AuthController = {
   },
   getUserByToken: async (req, res) => {
     try {
-      const token = req.header('token');
-      if (!token) {
-        return res.status(401).json({ msg: 'No token, authorization denied' });
-      }
-
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findByPk(decoded.user.id, {
-        include: [{ model: Profile, as: 'profile' }],
+      const user = await User.findByPk(req.user.id, {
+        include: [{ model: Profile, as: 'profile' }]
       });
-
+  
       if (!user) {
         return res.status(404).json({ msg: 'User not found' });
       }
-
-      res.json(user);
+  
+      res.json(user.profile);
     } catch (err) {
       console.error(err.message);
-      if (err.name === 'JsonWebTokenError') {
-        res.status(401).json({ msg: 'Token is not valid' });
-      } else {
-        res.status(500).send('Server error');
-      }
+      res.status(500).send('Server error');
     }
   },
 };

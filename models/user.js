@@ -2,7 +2,6 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const bcrypt = require('bcryptjs');
-const Profile = require('./profile');
 
 class User extends Model {}
 
@@ -58,9 +57,7 @@ User.init(
       },
     },
     tableName: 'Users',
-  },
+  }
 );
-
-// Mengatur asosiasi
 
 module.exports = User;

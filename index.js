@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 
 dotenv.config();
+const cleanUpEvents = require('./utils/cleanup');
 
 const app = express();
 
@@ -23,6 +24,10 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/protected', protectedRoutes);
 app.use('/api/user-join-event', require('./routes/userJointEventRoutes'));
 app.use('/api/comments', require('./routes/commentRoutes'));
+
+
+// Start event cleanup process
+cleanUpEvents();
 
 const PORT = process.env.PORT || 5000;
 

@@ -8,12 +8,6 @@ const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/../config/config.json')[env];
 const db = {};
-const User = require('./user');
-const Profile = require('./profile');
-
-// Definisikan relasi di sini
-User.hasOne(Profile, { foreignKey: 'userId', as: 'profile' });
-Profile.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 module.exports = {
   User,

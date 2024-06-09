@@ -2,6 +2,7 @@ const express = require('express');
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const UserJoinEvent = require('../models/userjoinevent');
+const Profile = require('../models/profile');
 const router = express.Router();
 
 // @route    POST api/user-join-event
@@ -11,7 +12,6 @@ router.post('/', [
   auth,
   [
     check('eventId', 'Event ID is required').not().isEmpty(),
-    check('profileId', 'Profile ID is required').not().isEmpty(),
     check('joinDate', 'Join Date is required').not().isEmpty(),
     check('isActive', 'isActive is required').isBoolean()
   ]
@@ -21,12 +21,13 @@ router.post('/', [
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { eventId, profileId, joinDate, isActive } = req.body;
+  const { eventId, joinDate, isActive } = req.body;
 
   try {
+    const profile = await Profile.findOne({where: {userId: req.user.id}});
     const userJoinEvent = new UserJoinEvent({
       eventId,
-      profileId,
+      profileId: profile.id,
       joinDate,
       isActive
     });
