@@ -3,6 +3,7 @@ const Event = require('../models/event');
 const UserJoinEvent = require('../models/userjoinevent');
 const Profile = require('../models/profile');
 
+
 // Mendapatkan event dengan lazy loading
 // Mendapatkan event dengan lazy loading
 exports.getEvents = async (req, res) => {
@@ -80,6 +81,52 @@ exports.cleanUpEvents = async () => {
     });
   } catch (err) {
     console.error('Error cleaning up events:', err.message);
+  }
+};
+
+exports.getEventById = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    const event = await Event.findOne({
+      where: { id: eventId },
+      include: [
+        {
+          model: Profile,
+          as: 'owner',
+          attributes: ['name', 'photo', 'headTitle'],
+        },
+      ],
+    });
+
+    if (!event) {
+      return res.status(404).json({ msg: 'Event not found' });
+    }
+
+
+    const eventData = {
+      title: event.title,
+      category: event.category,
+      description: event.description,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      maxParticipant: event.maxParticipant,
+      image: event.image,
+      createdAt: event.createdAt,
+      owner: {
+        name: event.owner.name,
+        photo: event.owner.photo,
+        headTitle: event.owner.headTitle,
+      },
+      bookmarks: event.bookmarks, // Assuming this is an array of bookmark IDs or similar
+      totalParticipants: event.totalParticipants,
+      
+    };
+
+    res.json(eventData);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 };
 
