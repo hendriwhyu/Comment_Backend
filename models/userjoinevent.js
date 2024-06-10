@@ -6,35 +6,28 @@ const Event = require('./event');
 class UserJoinEvent extends Model {}
 
 UserJoinEvent.init({
-  eventId: {
+  id: {
     type: DataTypes.UUID,
-    references: {
-      model: Event,
-      key: 'id'
-    }
-  },
-  profileId: {
-    type: DataTypes.UUID,
-    references: {
-      model: Profile,
-      key: 'id'
-    }
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
   },
   joinDate: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
   },
   isActive: {
     type: DataTypes.BOOLEAN,
-    allowNull: false
-  }
+    defaultValue: true,
+  },
 }, {
   sequelize,
   modelName: 'UserJoinEvent',
-  tableName: 'UserJointEvent'
+  tableName: 'UserJoinEvents',
+  timestamps: true,
 });
 
-UserJoinEvent.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
-UserJoinEvent.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
+UserJoinEvent.belongsTo(Profile, { foreignKey: 'profileId' });
+UserJoinEvent.belongsTo(Event, { foreignKey: 'eventId' });
 
 module.exports = UserJoinEvent;

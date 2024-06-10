@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const Event = require('../models/event');
+const UserJoinEvent = require('../models/userjoinevent');
 const Profile = require('../models/profile');
 
 // Mendapatkan event dengan lazy loading
@@ -30,7 +31,7 @@ exports.getEvents = async (req, res) => {
         include: {
           model: Profile,
           as: 'owner',
-          attributes: ['name'],
+          attributes: ['photo','name','headTitle'],
         },
         limit: parseInt(limit),
         offset: parseInt(offset),
@@ -47,7 +48,11 @@ exports.getEvents = async (req, res) => {
         maxParticipants: event.maxParticipants,
         image: event.image,
         createdAt: event.createdAt,
-        ownerName: event.owner.name,
+        ownerName: {
+          photo: event.owner.photo,
+          name: event.owner.name,
+          headTitle: event.owner.headTitle,
+        },
         bookmarks: event.bookmarks,
         totalParticipants: event.totalParticipants,
       }));
@@ -201,3 +206,35 @@ exports.deleteEvent = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
+exports.getParticipants = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    const event = await Event.findByPk(eventId);
+
+    if (!event) {
+      return res.status(404).json({ msg: 'Event not found' });
+    }
+
+    const participants = await UserJoinEvent.findAll({
+      where: { eventId },
+      include: [
+        {
+          model: Profile,
+          attributes: ['photo', 'headTitle'],
+        },
+      ],
+    });
+
+    const result = participants.map(participant => ({
+      photo: participant.Profile.photo,
+      headTitle: participant.Profile.headTitle,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+}

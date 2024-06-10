@@ -1,48 +1,15 @@
 const express = require('express');
-const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const UserJoinEvent = require('../models/userjoinevent');
 const Profile = require('../models/profile');
+const {joinEvent, leaveEvent } = require('../controller/UserJointEventController');
 const router = express.Router();
 
-// @route    POST api/user-join-event
-// @desc     User join an event
-// @access   Private
-router.post('/', [
-  auth,
-  [
-    check('eventId', 'Event ID is required').not().isEmpty(),
-    check('joinDate', 'Join Date is required').not().isEmpty(),
-    check('isActive', 'isActive is required').isBoolean()
-  ]
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
+router.post('/join', auth, joinEvent);
 
-  const { eventId, joinDate, isActive } = req.body;
+router.post('/leave', auth, leaveEvent);
 
-  try {
-    const profile = await Profile.findOne({where: {userId: req.user.id}});
-    const userJoinEvent = new UserJoinEvent({
-      eventId,
-      profileId: profile.id,
-      joinDate,
-      isActive
-    });
 
-    await userJoinEvent.save();
-    res.json(userJoinEvent);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
-
-// @route    GET api/user-join-event
-// @desc     Get all user join events
-// @access   Private
 router.get('/', auth, async (req, res) => {
   try {
     const userJoinEvents = await UserJoinEvent.findAll();
@@ -52,6 +19,8 @@ router.get('/', auth, async (req, res) => {
     res.status(500).send('Server error');
   }
 });
+
+
 
 // @route    GET api/user-join-event/:id
 // @desc     Get user join event by ID

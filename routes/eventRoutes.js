@@ -2,9 +2,12 @@ const express = require('express');
 const { check } = require('express-validator');
 const authVolunteer = require('../middleware/authVolunteer'); // Middleware untuk memeriksa volunteer
 const auth = require('../middleware/auth'); // Middleware untuk memeriksa autentikasi(user)
+const { getParticipants } = require('../controller/EventController');
 const eventController = require('../controller/EventController');
 const router = express.Router();
 
+// Mendapatkan partisipan
+router.get('/:eventId/participants', auth, getParticipants);
 // Mendapatkan semua event dengan lazy loading
 router.get('/event', eventController.getEvents);
 
