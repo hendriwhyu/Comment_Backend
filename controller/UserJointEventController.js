@@ -1,39 +1,43 @@
-const { Op } = require('sequelize');
-const Event = require('../models/event');
-const UserJoinEvent = require('../models/userjoinevent');
-const Profile = require('../models/profile');
+const prisma = require('../utils/Prisma');
 
 exports.joinEvent = async (req, res) => {
   const { eventId } = req.body;
   const userId = req.user.id;
 
   try {
-    const profile = await Profile.findOne({ where: { userId } });
+    const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) {
       return res.status(404).json({ msg: 'Profile not found' });
     }
 
-    const event = await Event.findByPk(eventId);
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) {
       return res.status(404).json({ msg: 'Event not found' });
     }
 
-    const userJoinEvent = await UserJoinEvent.findOne({ where: { profileId: profile.id, eventId } });
+    const userJoinEvent = await prisma.userJoinEvent.findFirst({
+      where: {
+        profileId: profile.id,
+        eventId: eventId
+      }
+    });
     if (userJoinEvent) {
       return res.status(400).json({ msg: 'Already joined this event' });
     }
 
-    await UserJoinEvent.create({
-      eventId,
-      profileId: profile.id,
-      joinDate: new Date(),
-      isActive: true,
+    await prisma.userJoinEvent.create({
+      data: {
+        eventId,
+        profileId: profile.id,
+        joinDate: new Date(),
+        isActive: true,
+      }
     });
 
-    await Event.update(
-      { totalParticipants: event.totalParticipants + 1 },
-      { where: { id: eventId } }
-    );
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { totalParticipants: event.totalParticipants + 1 }
+    });
 
     res.json({ msg: 'Joined event successfully' });
   } catch (err) {
@@ -47,27 +51,32 @@ exports.leaveEvent = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const profile = await Profile.findOne({ where: { userId } });
+    const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) {
       return res.status(404).json({ msg: 'Profile not found' });
     }
 
-    const event = await Event.findByPk(eventId);
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) {
       return res.status(404).json({ msg: 'Event not found' });
     }
 
-    const userJoinEvent = await UserJoinEvent.findOne({ where: { profileId: profile.id, eventId } });
+    const userJoinEvent = await prisma.userJoinEvent.findFirst({
+      where: {
+        profileId: profile.id,
+        eventId: eventId
+      }
+    });
     if (!userJoinEvent) {
       return res.status(400).json({ msg: 'Not joined this event' });
     }
 
-    await UserJoinEvent.destroy({ where: { id: userJoinEvent.id } });
+    await prisma.userJoinEvent.delete({ where: { id: userJoinEvent.id } });
 
-    await Event.update(
-      { totalParticipants: event.totalParticipants - 1 },
-      { where: { id: eventId } }
-    );
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { totalParticipants: event.totalParticipants - 1 }
+    });
 
     res.json({ msg: 'Left event successfully' });
   } catch (err) {

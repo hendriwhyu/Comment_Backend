@@ -1,9 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
-const User = require('../models/user');
-const Profile = require('../models/profile');
-
+const prisma = require('../utils/Prisma');
 
 const AuthController = {
   register: async (req, res) => {
@@ -15,20 +13,27 @@ const AuthController = {
     const { username, email, password, role } = req.body;
 
     try {
-      let user = await User.findOne({ where: { email } });
+      const existingUser = await prisma.users.findUnique({ where: { email } });
 
-      if (user) {
-        return res
-          .status(400)
-          .json({ errors: [{ msg: 'User already exists' }] });
+      if (existingUser) {
+        return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
       }
-
-      user = await User.create({
-        username,
-        email,
-        password,
-        role: role || 'user', // Set role default 'user' jika user tidak di isi
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      const newUser = await prisma.users.create({
+        data: {
+          username,
+          email,
+          password: hashedPassword,
+          role: role || 'user', // Set role default 'user' jika user tidak diisi
+        }
       });
+      await prisma.profiles.create({
+        data: {
+          name: username,
+          userId: newUser.id
+        }
+      })
 
       res.json({ status: 'success', message: 'User created successfully' });
     } catch (err) {
@@ -45,7 +50,7 @@ const AuthController = {
     const { email, password } = req.body;
 
     try {
-      let user = await User.findOne({ where: { email } });
+      const user = await prisma.users.findUnique({ where: { email } });
 
       if (!user) {
         console.log('User not found');
@@ -56,9 +61,7 @@ const AuthController = {
 
       if (!isMatch) {
         console.log('Password does not match');
-        return res
-          .status(400)
-          .json({ errors: [{ msg: 'Invalid credentials' }] });
+        return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
       }
 
       const payload = {
@@ -84,7 +87,7 @@ const AuthController = {
   },
   getAllUsers: async (req, res) => {
     try {
-      const users = await User.findAll();
+      const users = await prisma.users.findMany();
       res.json(users);
     } catch (err) {
       console.error(err.message);
@@ -93,8 +96,9 @@ const AuthController = {
   },
   getUserByToken: async (req, res) => {
     try {
-      const user = await User.findByPk(req.user.id, {
-        include: [{ model: Profile, as: 'profile' }]
+      const user = await prisma.users.findUnique({
+        where: { id: req.user.id },
+        include: { profile: true }
       });
   
       if (!user) {

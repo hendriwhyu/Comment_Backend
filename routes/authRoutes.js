@@ -4,8 +4,6 @@ const { check } = require('express-validator');
 const dotenv = require('dotenv');
 const AuthController = require('../controller/AuthController');
 const authVolunteer = require('../middleware/authVolunteer');
-const auth = require('../middleware/auth');
-
 
 dotenv.config();
 
