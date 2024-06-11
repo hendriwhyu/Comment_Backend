@@ -1,50 +1,68 @@
 const express = require('express');
-const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
-const UserJoinEvent = require('../models/userjoinevent');
+const prisma = require('../utils/Prisma');
 const router = express.Router();
 
-// @route    POST api/user-join-event
-// @desc     User join an event
-// @access   Private
-router.post('/', [
-  auth,
-  [
-    check('eventId', 'Event ID is required').not().isEmpty(),
-    check('profileId', 'Profile ID is required').not().isEmpty(),
-    check('joinDate', 'Join Date is required').not().isEmpty(),
-    check('isActive', 'isActive is required').isBoolean()
-  ]
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { eventId, profileId, joinDate, isActive } = req.body;
+router.post('/join', auth, async (req, res) => {
+  const userId = req.user.id;
+  const { eventId } = req.body;
 
   try {
-    const userJoinEvent = new UserJoinEvent({
-      eventId,
-      profileId,
-      joinDate,
-      isActive
+    const userJoinEvent = await prisma.userJoinEvents.findFirst({
+      where: {
+        profileId: userId,
+        eventId: eventId
+      }
     });
 
-    await userJoinEvent.save();
-    res.json(userJoinEvent);
+    if (userJoinEvent) {
+      return res.status(400).json({ msg: 'Already joined this event' });
+    }
+
+    await prisma.userJoinEvents.create({
+      data: {
+        eventId,
+        profileId: userId,
+        joinDate: new Date(),
+        isActive: true,
+      }
+    });
+
+    res.json({ msg: 'Joined event successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 });
 
-// @route    GET api/user-join-event
-// @desc     Get all user join events
-// @access   Private
+router.post('/leave', auth, async (req, res) => {
+  const userId = req.user.id;
+  const { eventId } = req.body;
+
+  try {
+    const userJoinEvent = await prisma.userJoinEvents.findFirst({
+      where: {
+        profileId: userId,
+        eventId: eventId
+      }
+    });
+
+    if (!userJoinEvent) {
+      return res.status(400).json({ msg: 'Not joined this event' });
+    }
+
+    await prisma.userJoinEvent.delete({ where: { id: userJoinEvent.id } });
+
+    res.json({ msg: 'Left event successfully' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 router.get('/', auth, async (req, res) => {
   try {
-    const userJoinEvents = await UserJoinEvent.findAll();
+    const userJoinEvents = await prisma.userJoinEvents.findMany();
     res.json(userJoinEvents);
   } catch (err) {
     console.error(err.message);
@@ -52,13 +70,10 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// @route    GET api/user-join-event/:id
-// @desc     Get user join event by ID
-// @access   Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const userJoinEvent = await UserJoinEvent.findOne({
-      where: { id: req.params.id }
+    const userJoinEvent = await prisma.userJoinEvents.findUnique({
+      where: { id: parseInt(req.params.id) }
     });
 
     if (!userJoinEvent) {

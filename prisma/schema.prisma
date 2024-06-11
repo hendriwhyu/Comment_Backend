@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Posts {
+  id              String            @id @db.Uuid @default(uuid())
+  title           String?           @db.VarChar(255)
+  category        enum_Posts_category?
+  description     String?
+  startDate       DateTime?         @db.Timestamptz(6)
+  endDate         DateTime?         @db.Timestamptz(6)
+  maxParticipants Int?
+  image           String?           @db.VarChar(255)
+  ownerId         String            @db.Uuid
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+  comments        comments[]
+  owner           Users             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  participants    UserJoinEvents[]
+  bookmarks       BookmarksOnPosts[]
+}
+
+model Profiles {
+  userId    String   @db.Uuid @unique
+  name      String   @db.VarChar(255)
+  photo     String?  @db.VarChar(255)
+  headTitle String?  @db.VarChar(255)
+  phone     String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  Users     Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserJoinEvents {
+  userId      String   @db.Uuid
+  eventId     String   @db.Uuid
+  joinDate    DateTime @db.Timestamptz(6)
+  isActive    Boolean
+  event       Posts    @relation(fields: [eventId], references: [id])
+  participant Users    @relation(fields: [userId], references: [id])
+  @@id([userId, eventId])
+}
+
+model Users {
+  id           String            @id @db.Uuid @default(uuid())
+  username     String            @unique @db.VarChar(255)
+  email        String            @unique @db.VarChar(255)
+  password     String            @db.VarChar(255)
+  role         enum_Users_role?  @default(user)
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+  profile      Profiles?
+  posts        Posts[]
+  comments     comments[]
+  bookmarksPost BookmarksOnPosts[]
+  recentEvents UserJoinEvents[]
+}
+
+model comments {
+  id        String  @id @db.Uuid @default(uuid())
+  eventId   String  @db.Uuid
+  content   String  @db.VarChar(255)
+  profileId String? @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  Posts     Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  User      Users?   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model BookmarksOnPosts {
+  userId String @db.Uuid
+  user   Users @relation(fields: [userId], references: [id])
+  postId String @db.Uuid
+  post   Posts @relation(fields: [postId], references: [id])
+  @@id([postId, userId])
+}
+
+enum enum_Posts_category {
+  Event
+  News
+}
+
+enum enum_Users_role {
+  company
+  user
+}
