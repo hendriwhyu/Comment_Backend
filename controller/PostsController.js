@@ -1,3 +1,4 @@
+const path = require('path');
 const prisma = require('../utils/Prisma');
 
 // Mendapatkan post dengan lazy loading
@@ -95,12 +96,12 @@ exports.getPostById = async (req, res) => {
       where: { id: postId },
       include: {
         owner: {
-          select: {
-            name: true,
-            photo: true,
-            headTitle: true,
+          include: {
+            profile: true,
           },
         },
+        comments: true,
+        participants: true,
       },
     });
 
@@ -108,25 +109,7 @@ exports.getPostById = async (req, res) => {
       return res.status(404).json({ msg: 'post not found' });
     }
 
-    const postsData = {
-      title: posts.title,
-      category: posts.category,
-      description: posts.description,
-      startDate: posts.startDate,
-      endDate: posts.endDate,
-      maxParticipants: posts.maxParticipants,
-      image: posts.image,
-      createdAt: posts.createdAt,
-      owner: {
-        name: posts.owner.name,
-        photo: posts.owner.photo,
-        headTitle: posts.owner.headTitle,
-      },
-      bookmarks: posts.bookmarks, // Assuming this is an array of bookmark IDs or similar
-      totalParticipants: posts.totalParticipants,
-    };
-
-    res.json(postsData);
+    res.json({ data: posts });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -168,7 +151,7 @@ exports.getPostByTitle = async (req, res) => {
           owner: {
             include: {
               profile: true,
-            }
+            },
           },
           comments: true,
           participants: true,
@@ -211,25 +194,46 @@ exports.createPost = async (req, res) => {
     startDate,
     endDate,
     maxParticipants,
-    image,
   } = req.body;
   try {
-    const newPost = await prisma.posts.create({
-      data: {
-        title,
-        category,
-        description,
-        startDate,
-        endDate,
-        maxParticipants,
-        image,
-        owner: {
-          connect: { id: ownerId } // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
-        }
-      },
-    });
+    let newPost;
+    let fullPath = null;
+    if(req.file){
+      const originalFileName = path.basename(req.file.path);
+      const fileNameWithoutExtension = path.parse(originalFileName).name;
+      const formattedFileName = `${fileNameWithoutExtension}.jpeg`;
+      fullPath = `/assets/${formattedFileName}`;
+    }
+    if (category === 'Event') {
+      newPost = await prisma.posts.create({
+        data: {
+          title,
+          category,
+          description,
+          startDate,
+          endDate,
+          maxParticipants,
+          image: fullPath,
+          owner: {
+            connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
+          },
+        },
+      });
+    } else {
+      newPost = await prisma.posts.create({
+        data: {
+          title,
+          category,
+          description,
+          image: fullPath,
+          owner: {
+            connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
+          },
+        },
+      });
+    }
 
-    res.json(newPost);
+    res.json({ status: 'success', msg: 'Post created', data: newPost });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -247,7 +251,7 @@ exports.updatePost = async (req, res) => {
     maxParticipants,
     image,
   } = req.body;
-
+  console.log(req.body);
   const postFields = {};
   if (title) postFields.title = title;
   if (category) postFields.category = category;
@@ -332,6 +336,19 @@ exports.getParticipants = async (req, res) => {
     }));
 
     res.json(result);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getPostsByUser = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const posts = await prisma.posts.findMany({
+      where: { ownerId: userId },
+    });
+    res.json({ status: 'success', msg: 'Posts fetched', data: posts });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

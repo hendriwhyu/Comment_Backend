@@ -9,7 +9,6 @@ const cleanUpEvents = require('./utils/cleanup');
 
 dotenv.config();
 
-
 const app = express();
 
 // Izin Cors
@@ -21,7 +20,7 @@ app.use(express.json({ extended: false }));
 // Definisi Route
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/events', require('./routes/postRoutes'));
+app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/protected', protectedRoutes);
 app.use('/api/user-join-event', require('./routes/userJointEventRoutes'));
 app.use('/api/comments', require('./routes/commentRoutes'));

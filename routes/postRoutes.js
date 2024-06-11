@@ -7,15 +7,16 @@ const {
   getPostById,
 } = require('../controller/PostsController');
 const PostsController = require('../controller/PostsController');
+const { upload } = require('../utils/File');
 const router = express.Router();
 
 // Mendapatkan partisipan
-router.get('/:PostId/participants', auth, getParticipants);
+router.get('/:postId/participants', auth, getParticipants);
 // Mendapatkan semua Post dengan lazy loading
-router.get('/Post', PostsController.getPosts);
+router.get('/post', PostsController.getPosts);
 //  Mendapatkan Post by id
 
-router.get('/:PostId', auth, getPostById);
+router.get('/:postId', auth, getPostById);
 // Mendapatkan Post berdasarkan title dengan pencarian (search)
 router.get('/', PostsController.getPostByTitle);
 
@@ -33,16 +34,19 @@ router.post(
       check('startDate', 'Start date is required').not().isEmpty(),
       check('endDate', 'End date is required').not().isEmpty(),
     ],
+    upload.single('image'),
   ],
   PostsController.createPost,
 );
 
 // Memperbarui Post berdasarkan ID
-router.put('/:id', authVolunteer, PostsController.updatePost);
 router.put('/:id', auth, PostsController.updatePost);
+router.put('/:id', authVolunteer, PostsController.updatePost);
 
 // Menghapus Post berdasarkan ID
-router.delete('/:id', authVolunteer, PostsController.deletePost);
 router.delete('/:id', auth, PostsController.deletePost);
+router.delete('/:id', authVolunteer, PostsController.deletePost);
+
+router.get('/user/:userId', auth, PostsController.getPostsByUser);
 
 module.exports = router;
