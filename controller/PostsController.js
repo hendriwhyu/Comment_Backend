@@ -20,13 +20,32 @@ exports.getPosts = async (req, res) => {
 
     // Ambil post yang masih berlaku dengan pagination
     const posts = await prisma.posts.findMany({
-      where: {
-        endDate: {
-          gt: now,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
         },
-      },
-      include: {
-        owner: true,
+        bookmarks: true,
+        participants: true,
       },
       take: parseInt(limit),
       skip: parseInt(offset),

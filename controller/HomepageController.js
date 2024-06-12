@@ -111,6 +111,44 @@ const HomepageController = {
     }
   },
 
+  getPostById: async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const post = await prisma.posts.findUnique({
+        where: { id: postId },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          category: true,
+          image: true,
+          createdAt: true,
+          updatedAt: true,
+          owner: {
+            select: {
+              username: true,
+              id: true,
+              username: true,
+              role: true,
+              profile: {
+                select: {
+                  photo: true,
+                  name: true,
+                  headTitle: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          participants: true,
+        },
+      });
+      res.json({ status: 'success', msg: 'Post fetched', data: post });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
 };
 
 module.exports = HomepageController;
