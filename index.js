@@ -1,11 +1,15 @@
 const express = require('express');
-const authRoutes = require('./routes/authRoutes');
-const profileRoutes = require('./routes/profileRoutes');
-const protectedRoutes = require('./routes/protectedRoute'); // Import rute yang dilindungi
 const dotenv = require('dotenv');
 const cors = require('cors');
+const authRoutes = require('./routes/authRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+const protectedRoutes = require('./routes/protectedRoute'); // Import rute yang dilindungi
+const joinRoutes = require('./routes/userJoinEventRoutes');
 const prisma = require('./utils/Prisma');
 const cleanUpEvents = require('./utils/cleanup');
+const homeRoutes = require('./routes/homeRoutes');
+const HomepageController = require('./controller/HomepageController');
 
 dotenv.config();
 
@@ -22,8 +26,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/protected', protectedRoutes);
-app.use('/api/user-join-event', require('./routes/userJointEventRoutes'));
-app.use('/api/comments', require('./routes/commentRoutes'));
+app.use('/api/join', joinRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/home', homeRoutes);
 
 // Start event cleanup process
 cleanUpEvents();

@@ -70,24 +70,24 @@ exports.getComments = async (req, res) => {
 // Membuat komentar baru
 exports.createComment = async (req, res) => {
   const { content } = req.body;
-  const { eventId } = req.params;
+  const { eventId, userId } = req.params;
 
   try {
-    const profile = await prisma.profiles.findUnique({
+    const userComment = await prisma.users.findUnique({
       where: {
-        userId: req.user.id,
+        id: userId,
       },
     });
 
-    if (!profile) {
-      return res.status(400).json({ msg: 'Profile not found' });
+    if (!userComment) {
+      return res.status(400).json({ msg: 'User not found' });
     }
 
     const newComment = await prisma.comments.create({
       data: {
         content,
         eventId,
-        profileId: profile.id,
+        userId: userId,
       },
     });
 
@@ -120,7 +120,7 @@ exports.updateComment = async (req, res) => {
   try {
     const comment = await prisma.comments.findUnique({
       where: {
-        id: parseInt(req.params.id),
+        id: req.params.id,
       },
     });
 
@@ -128,9 +128,9 @@ exports.updateComment = async (req, res) => {
       return res.status(404).json({ msg: 'Comment not found' });
     }
 
-    await prisma.comment.update({
+    await prisma.comments.update({
       where: {
-        id: parseInt(req.params.id),
+        id: req.params.id,
       },
       data: {
         content,

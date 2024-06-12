@@ -87,7 +87,23 @@ const AuthController = {
   },
   getAllUsers: async (req, res) => {
     try {
-      const users = await prisma.users.findMany();
+      const users = await prisma.users.findMany({
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          profile: {
+            select: {
+              name: true,
+              headTitle: true,
+              phone: true,
+              photo: true,
+            },
+          },
+          recentEvents: true,
+        }
+      });
       res.json(users);
     } catch (err) {
       console.error(err.message);
@@ -98,7 +114,21 @@ const AuthController = {
     try {
       const user = await prisma.users.findUnique({
         where: { id: req.user.id },
-        include: { profile: true }
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          profile: {
+            select: {
+              name: true,
+              headTitle: true,
+              phone: true,
+              photo: true,
+            },
+          },
+          recentEvents: true,
+        }
       });
   
       if (!user) {

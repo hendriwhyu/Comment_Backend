@@ -1,4 +1,4 @@
-const prisma = require('./utils/Prisma');
+const prisma = require('../utils/Prisma');
 const createUser = require('./seeding/UserSeeding');
 const createPost = require('./seeding/PostsSeeding');
 

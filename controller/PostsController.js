@@ -1,5 +1,6 @@
 const path = require('path');
 const prisma = require('../utils/Prisma');
+const { tr } = require('@faker-js/faker');
 
 // Mendapatkan post dengan lazy loading
 exports.getPosts = async (req, res) => {
@@ -25,8 +26,32 @@ exports.getPosts = async (req, res) => {
           gt: now,
         },
       },
-      include: {
-        owner: true,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
       },
       take: parseInt(limit),
       skip: parseInt(offset),
@@ -35,14 +60,7 @@ exports.getPosts = async (req, res) => {
       },
     });
 
-    const totalCount = await prisma.posts.count({
-      where: {
-        endDate: {
-          gt: now,
-        },
-      },
-    });
-
+    const totalCount = posts.length;
     const result = posts.map((post) => ({
       id: post.id,
       title: post.title,
@@ -59,12 +77,12 @@ exports.getPosts = async (req, res) => {
         headTitle: post.owner.headTitle,
       },
       bookmarks: post.bookmarks,
-      totalParticipants: post.totalParticipants,
+      totalParticipants: post.participants.length,
     }));
 
     res.json({
       total: totalCount,
-      pages: Math.ceil(totalCount / limit),
+      pages: +page,
       data: result,
     });
   } catch (err) {
@@ -132,17 +150,6 @@ exports.getPostByTitle = async (req, res) => {
             mode: 'insensitive',
           },
         },
-        include: {
-          owner: {
-            select: {
-              name: true,
-              photo: true,
-              headTitle: true,
-            },
-          },
-          comments: true,
-          participants: true,
-        },
       });
     } else {
       // Ambil semua post jika tidak ada query parameter title
@@ -155,11 +162,12 @@ exports.getPostByTitle = async (req, res) => {
           },
           comments: true,
           participants: true,
+          bookmarks: true,
         },
       });
     }
 
-    res.json({ data: posts });
+    res.json({ status: 'success', msg: 'Posts fetched', data: posts });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -198,7 +206,7 @@ exports.createPost = async (req, res) => {
   try {
     let newPost;
     let fullPath = null;
-    if(req.file){
+    if (req.file) {
       const originalFileName = path.basename(req.file.path);
       const fileNameWithoutExtension = path.parse(originalFileName).name;
       const formattedFileName = `${fileNameWithoutExtension}.jpeg`;
