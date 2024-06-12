@@ -1,6 +1,5 @@
 const path = require('path');
 const prisma = require('../utils/Prisma');
-const { tr } = require('@faker-js/faker');
 
 // Mendapatkan post dengan lazy loading
 exports.getPosts = async (req, res) => {
@@ -21,32 +20,13 @@ exports.getPosts = async (req, res) => {
 
     // Ambil post yang masih berlaku dengan pagination
     const posts = await prisma.posts.findMany({
-      select: {
-        id: true,
-        title: true,
-        category: true,
-        description: true,
-        startDate: true,
-        endDate: true,
-        maxParticipants: true,
-        image: true,
-        createdAt: true,
-        owner: {
-          select: {
-            email: true,
-            username: true,
-            role: true,
-            profile: {
-              select: {
-                photo: true,
-                name: true,
-                headTitle: true,
-              },
-            },
-          },
+      where: {
+        endDate: {
+          gt: now,
         },
-        bookmarks: true,
-        participants: true,
+      },
+      include: {
+        owner: true,
       },
       take: parseInt(limit),
       skip: parseInt(offset),

@@ -85,6 +85,62 @@ const AuthController = {
       res.status(500).send('Server error');
     }
   },
+  getAllUsers: async (req, res) => {
+    try {
+      const users = await prisma.users.findMany({
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          profile: {
+            select: {
+              name: true,
+              headTitle: true,
+              phone: true,
+              photo: true,
+            },
+          },
+          recentEvents: true,
+        }
+      });
+      res.json(users);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
+  getUserByToken: async (req, res) => {
+    try {
+      const user = await prisma.users.findUnique({
+        where: { id: req.user.id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          profile: {
+            select: {
+              name: true,
+              headTitle: true,
+              phone: true,
+              photo: true,
+            },
+          },
+          recentEvents: true,
+        }
+      });
+  
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+  
+      res.json(user.profile);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
 };
 
 module.exports = AuthController;
