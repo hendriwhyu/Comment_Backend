@@ -7,7 +7,7 @@ exports.jointEvent = async (req, res) => {
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
-        profileId: userId,
+        userId: userId,
         eventId: eventId
       }
     });
@@ -19,7 +19,7 @@ exports.jointEvent = async (req, res) => {
     await prisma.userJoinEvents.create({
       data: {
         eventId,
-        profileId: userId,
+        userId: userId,
         joinDate: new Date(),
         isActive: true,
       }
@@ -39,7 +39,7 @@ exports.userLeave = async (req, res) => {
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
-        profileId: userId,
+        userId: userId,
         eventId: eventId
       }
     });
