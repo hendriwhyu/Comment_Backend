@@ -1,4 +1,4 @@
-const prisma = require('./utils/Prisma');
+const prisma = require('../../utils/Prisma');
 const { faker } = require('@faker-js/faker'); // Import faker
 
 // Run the command to create 20 dummy posts

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const commentController = require('../controller/commentController');
+const commentController = require('../controller/CommentController');
 
 // Mendapatkan semua komentar
 router.get('/', auth, commentController.getAllComments);

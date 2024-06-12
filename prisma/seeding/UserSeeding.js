@@ -1,6 +1,6 @@
 const { faker } = require('@faker-js/faker'); // Import faker
 const bcrypt = require('bcryptjs'); // Import bcrypt
-const prisma = require('./utils/Prisma');
+const prisma = require('../../utils/Prisma');
 
 // Run the command to create 10 user data
 const createUserAndProfile = async () => {
