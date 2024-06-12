@@ -94,7 +94,7 @@ const UserController = {
   // @route    POST api/profile
   // @desc     Create or update profile
   // @access   Private
-  updateUserProfile: async (req, res) => {
+  updateProfileByAuth: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -103,43 +103,38 @@ const UserController = {
     const { photo, name, headTitle, phone } = req.body;
 
     try {
-      const user = await prisma.users.upsert({
-        where: { id: req.params.userId },
-        update: {
-          username: req.body.username,
-          email: req.body.email,
-        },
-      });
-      // Update or insert new profile
-      const profile = await prisma.profiles.upsert({
+      // Check if profile exists
+      let profile = await prisma.profiles.findUnique({
         where: { userId: req.user.id },
-        update: {
+      });
+
+      if (profile) {
+        // Update existing profile
+        profile = await prisma.profiles.update({
+          where: { userId: req.user.id },
+          data: { photo, name, headTitle, phone },
+        });
+        return res.json(profile);
+      }
+
+      // Create new profile
+      profile = await prisma.profiles.create({
+        data: {
           photo,
           name,
           headTitle,
           phone,
-        },
-        create: {
-          photo,
-          name,
-          headTitle,
-          phone,
+          userId: req.user.id,
         },
       });
 
-      res.json({
-        status: 'success',
-        msg: 'Profile updated',
-        data: {
-          user,
-          profile,
-        },
-      });
+      res.json(profile);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
     }
   },
+
 
   // @route    DELETE api/profile/:id
   // @desc     Delete profile

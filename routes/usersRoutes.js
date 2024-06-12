@@ -7,7 +7,7 @@ const UserController = require('../controller/UserController');
 router.get('/', UserController.getAllUsers);
 router.get('/me', auth, UserController.getUserByToken);
 router.get('/:id', UserController.getUserById);
-router.post('/', [auth, [check('name', 'Name is required').not().isEmpty()]], UserController.updateUserProfile);
+router.post('/', [auth, [check('name', 'Name is required').not().isEmpty()]], UserController.updateProfileByAuth);
 router.delete('/:id', auth, UserController.deleteUserProfile);
 
 module.exports = router;
