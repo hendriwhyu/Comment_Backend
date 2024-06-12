@@ -32,10 +32,4 @@ router.post(
   AuthController.login
 );
 
-// @route    GET api/auth
-// @desc     Get all users
-// @access   Private (requires authVolunteer middleware)
-router.get('/users', authVolunteer, AuthController.getAllUsers);
-router.get('/me', authVolunteer, AuthController.getUserByToken);
-
 module.exports = router;

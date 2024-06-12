@@ -2,14 +2,13 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
-const profileRoutes = require('./routes/profileRoutes');
+const usersRoutes = require('./routes/usersRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const protectedRoutes = require('./routes/protectedRoute'); // Import rute yang dilindungi
 const joinRoutes = require('./routes/userJoinEventRoutes');
 const prisma = require('./utils/Prisma');
 const cleanUpEvents = require('./utils/cleanup');
 const homeRoutes = require('./routes/homeRoutes');
-const HomepageController = require('./controller/HomepageController');
 
 dotenv.config();
 
@@ -23,7 +22,7 @@ app.use(express.json({ extended: false }));
 
 // Definisi Route
 app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/protected', protectedRoutes);
 app.use('/api/join', joinRoutes);

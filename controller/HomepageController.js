@@ -149,33 +149,7 @@ const HomepageController = {
       res.status(500).send('Server error');
     }
   },
-  getUserById: async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          username: true,
-          role: true,
-          profile: {
-            select: {
-              photo: true,
-              name: true,
-              headTitle: true,
-              phone: true,
-            },
-          },
-          recentEvents: true,
-          posts: true,
-        },
-      });
-      res.json({ status: 'success', msg: 'User fetched', data: user });
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Server error');
-    }
-  },
+
 };
 
 module.exports = HomepageController;

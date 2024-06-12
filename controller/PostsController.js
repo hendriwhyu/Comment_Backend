@@ -21,11 +21,6 @@ exports.getPosts = async (req, res) => {
 
     // Ambil post yang masih berlaku dengan pagination
     const posts = await prisma.posts.findMany({
-      where: {
-        endDate: {
-          gt: now,
-        },
-      },
       select: {
         id: true,
         title: true,
@@ -56,7 +51,7 @@ exports.getPosts = async (req, res) => {
       take: parseInt(limit),
       skip: parseInt(offset),
       orderBy: {
-        startDate: 'asc',
+        createdAt: 'asc',
       },
     });
 
@@ -88,6 +83,123 @@ exports.getPosts = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
+  }
+};
+
+exports.getPostsByTrends = async (req, res) => {
+  try {
+    const postsTrends = await prisma.posts.findMany({
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+        _count: {
+          select: { comments: true },
+        },
+      },
+      orderBy: {
+        comments: {
+          _count: 'desc',
+        },
+      },
+      take: 5,
+    });
+
+    let posts = postsTrends.filter((post) => post._count.comments > 0);
+
+    if (posts.length === 0) {
+      posts = [];
+    }
+
+    res.json({ status: 'success', msg: 'Posts Trends fetched', data: posts });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getPostsBookmarksByUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Mengecek apakah userId diberikan
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Mengambil postingan yang dibookmark oleh pengguna tertentu
+    const bookmarkedPosts = await prisma.posts.findMany({
+      where: {
+        bookmarks: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Jika tidak ada postingan yang dibookmark, kembalikan array kosong
+    if (bookmarkedPosts.length === 0) {
+      return res.status(200).json({ status: 'success', msg: 'No posts found',data: [] });
+    }
+
+    // Mengembalikan hasil postingan yang dibookmark oleh user tertentu
+    res.status(200).json({ status:'success', msg: 'Bookmarks fetched', data: bookmarkedPosts });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
