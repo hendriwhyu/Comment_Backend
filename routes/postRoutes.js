@@ -41,8 +41,8 @@ router.post(
 );
 
 // Memperbarui Post berdasarkan ID
-router.put('/:id', auth, PostsController.updatePost);
-router.put('/:id', authVolunteer, PostsController.updatePost);
+router.put('/:postId', [auth, upload.single('image'),], PostsController.updatePost);
+router.put('/:postId', authVolunteer, PostsController.updatePost);
 
 // Menghapus Post berdasarkan ID
 router.delete('/:id', auth, PostsController.deletePost);

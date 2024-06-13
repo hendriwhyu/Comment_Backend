@@ -18,6 +18,7 @@ const HomepageController = {
           image: true,
           createdAt: true,
           updatedAt: true,
+          maxParticipants: true,
           owner: {
             select: {
               username: true,
@@ -34,6 +35,7 @@ const HomepageController = {
               },
             },
           },
+          participants: true,
         },
         take: 20,
       });
@@ -79,6 +81,9 @@ const HomepageController = {
           posts: {
             _count: 'desc',
           },
+        },
+        where: {
+          role: 'company',
         },
         select: {
           id: true,

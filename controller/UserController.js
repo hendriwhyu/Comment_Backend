@@ -70,6 +70,7 @@ const UserController = {
         where: { id: userId },
         select: {
           id: true,
+          email: true,
           username: true,
           role: true,
           profile: {
