@@ -7,17 +7,15 @@ const {
   getPostById,
 } = require('../controller/PostsController');
 const PostsController = require('../controller/PostsController');
+const commentController = require('../controller/CommentController');
 const { upload } = require('../utils/File');
 const router = express.Router();
 
-// Mendapatkan partisipan
-router.get('/:postId/participants', auth, getParticipants);
 // Mendapatkan semua Post dengan lazy loading
 router.get('/post', PostsController.getPosts);
 router.get('/trends', PostsController.getPostsByTrends);
 router.get('/bookmarks/:userId', PostsController.getPostsBookmarksByUser);
 //  Mendapatkan Post by id
-
 router.get('/:postId', getPostById);
 // Mendapatkan Post berdasarkan title dengan pencarian (search)
 router.get('/', PostsController.getPostByTitle);
@@ -42,13 +40,22 @@ router.post(
 );
 
 // Memperbarui Post berdasarkan ID
-router.put('/:id', auth, PostsController.updatePost);
-router.put('/:id', authVolunteer, PostsController.updatePost);
+router.put('/:postId', [auth, upload.single('image'),], PostsController.updatePost);
+router.put('/:postId', authVolunteer, PostsController.updatePost);
 
 // Menghapus Post berdasarkan ID
 router.delete('/:id', auth, PostsController.deletePost);
 router.delete('/:id', authVolunteer, PostsController.deletePost);
 
 router.get('/user/:userId', auth, PostsController.getPostsByUser);
+
+// Membuat komentar baru
+router.post('/:postId/comments', auth, commentController.createComment);
+
+// Mengupdate komentar berdasarkan ID
+router.put('/:postId/comments/:commentId', auth, commentController.updateComment);
+
+// Menghapus komentar berdasarkan ID
+router.delete('/:postId/comments/:commentId', auth, commentController.deleteComment);
 
 module.exports = router;

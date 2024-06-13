@@ -1,7 +1,7 @@
 const prisma = require('../utils/Prisma');
 
 const HomepageController = {
-  getTrendsPostsAndUsers: async (req, res) => {
+  getPostsAndUsers: async (req, res) => {
     try {
       const eventsPosts = await prisma.posts.findMany({
         where: {
@@ -18,6 +18,7 @@ const HomepageController = {
           image: true,
           createdAt: true,
           updatedAt: true,
+          maxParticipants: true,
           owner: {
             select: {
               username: true,
@@ -34,8 +35,9 @@ const HomepageController = {
               },
             },
           },
+          participants: true,
         },
-        take: 10,
+        take: 20,
       });
 
       const newsPosts = await prisma.posts.findMany({
@@ -70,7 +72,7 @@ const HomepageController = {
             },
           },
         },
-        take: 10,
+        take: 20,
       });
 
       const users = await prisma.users.findMany({
@@ -79,6 +81,9 @@ const HomepageController = {
           posts: {
             _count: 'desc',
           },
+        },
+        where: {
+          role: 'company',
         },
         select: {
           id: true,
@@ -105,45 +110,6 @@ const HomepageController = {
           users,
         },
       });
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Server error');
-    }
-  },
-
-  getPostById: async (req, res) => {
-    try {
-      const { postId } = req.params;
-      const post = await prisma.posts.findUnique({
-        where: { id: postId },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          category: true,
-          image: true,
-          createdAt: true,
-          updatedAt: true,
-          owner: {
-            select: {
-              username: true,
-              id: true,
-              username: true,
-              role: true,
-              profile: {
-                select: {
-                  photo: true,
-                  name: true,
-                  headTitle: true,
-                  phone: true,
-                },
-              },
-            },
-          },
-          participants: true,
-        },
-      });
-      res.json({ status: 'success', msg: 'Post fetched', data: post });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');

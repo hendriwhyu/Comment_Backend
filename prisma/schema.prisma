@@ -63,13 +63,13 @@ model Users {
 
 model Comments {
   id        String  @id @db.Uuid @default(uuid())
-  eventId   String  @db.Uuid
+  postId   String  @db.Uuid
   content   String  @db.VarChar(255)
   userId String? @db.Uuid
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
-  Posts     Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  User      Users?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts     Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  owner      Users?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BookmarksOnPosts {

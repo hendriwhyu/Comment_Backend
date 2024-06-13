@@ -3,7 +3,6 @@ const router = express.Router();
 const { check } = require('express-validator');
 const dotenv = require('dotenv');
 const AuthController = require('../controller/AuthController');
-const authVolunteer = require('../middleware/authVolunteer');
 
 dotenv.config();
 

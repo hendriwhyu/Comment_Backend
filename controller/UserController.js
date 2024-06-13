@@ -70,6 +70,7 @@ const UserController = {
         where: { id: userId },
         select: {
           id: true,
+          email: true,
           username: true,
           role: true,
           profile: {
@@ -143,7 +144,7 @@ const UserController = {
     try {
       const user = await prisma.users.findUnique({
         where: {
-          id: req.params.id,
+          id: req.params.userId,
         },
       });
 

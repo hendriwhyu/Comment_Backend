@@ -18,8 +18,11 @@ const createUserAndProfile = async () => {
   });
 
   const profilesData = usersData.map((user) => ({
-    name: user.username,
+    name: faker.person.fullName(),
     userId: user.id,
+    headTitle: faker.person.jobTitle(),
+    phone: faker.phone.number(),
+    photo: `https://api.dicebear.com/8.x/identicon/svg?seed=${user.username}`
   }));
 
   // Membuat banyak entri dengan prisma.profiles.createMany()
