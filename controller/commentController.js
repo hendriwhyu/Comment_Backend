@@ -28,14 +28,14 @@ exports.getComments = async (req, res) => {
             name: true,
             photo: true,
             headTitle: true,
-          }
-        }
+          },
+        },
       },
       take: parseInt(limit),
       skip: parseInt(offset),
       orderBy: {
         createdAt: 'asc',
-      }
+      },
     });
 
     const total = await prisma.comments.count({
@@ -45,7 +45,7 @@ exports.getComments = async (req, res) => {
     });
 
     const totalPages = Math.ceil(total / limit);
-    const commentData = comments.map(comment => ({
+    const commentData = comments.map((comment) => ({
       id: comment.id,
       content: comment.content,
       createdAt: comment.createdAt,
@@ -53,7 +53,7 @@ exports.getComments = async (req, res) => {
         name: comment.profile.name,
         photo: comment.profile.photo,
         headTitle: comment.profile.headTitle,
-      }
+      },
     }));
 
     res.json({
@@ -69,8 +69,8 @@ exports.getComments = async (req, res) => {
 
 // Membuat komentar baru
 exports.createComment = async (req, res) => {
-  const { content } = req.body;
-  const { eventId, userId } = req.params;
+  const { content, userId } = req.body;
+  const { postId } = req.params;
 
   try {
     const userComment = await prisma.users.findUnique({
@@ -86,7 +86,7 @@ exports.createComment = async (req, res) => {
     const newComment = await prisma.comments.create({
       data: {
         content,
-        eventId,
+        postId,
         userId: userId,
       },
     });
@@ -116,11 +116,12 @@ exports.deleteCommentsForEndedEvents = async () => {
 // Mengupdate komentar berdasarkan ID
 exports.updateComment = async (req, res) => {
   const { content } = req.body;
+  const { commentId } = req.params;
 
   try {
     const comment = await prisma.comments.findUnique({
       where: {
-        id: req.params.id,
+        id: commentId,
       },
     });
 
@@ -128,16 +129,23 @@ exports.updateComment = async (req, res) => {
       return res.status(404).json({ msg: 'Comment not found' });
     }
 
-    await prisma.comments.update({
+    const updatedComment = await prisma.comments.update({
       where: {
-        id: req.params.id,
+        id: commentId,
+      },
+      include: {
+        owner: {
+          include: {
+            profile: true,
+          },
+        },
       },
       data: {
         content,
       },
     });
 
-    res.json({ msg: 'Comment updated' });
+    res.json({ msg: 'Comment updated', data: updatedComment });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -149,7 +157,7 @@ exports.deleteComment = async (req, res) => {
   try {
     const comment = await prisma.comments.findUnique({
       where: {
-        id: req.params.id,
+        id: req.params.commentId,
       },
     });
 
@@ -159,7 +167,7 @@ exports.deleteComment = async (req, res) => {
 
     await prisma.comments.delete({
       where: {
-        id: req.params.id,
+        id: req.params.commentId,
       },
     });
 

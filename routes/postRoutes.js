@@ -7,11 +7,10 @@ const {
   getPostById,
 } = require('../controller/PostsController');
 const PostsController = require('../controller/PostsController');
+const commentController = require('../controller/CommentController');
 const { upload } = require('../utils/File');
 const router = express.Router();
 
-// Mendapatkan partisipan
-router.get('/:postId/participants', auth, getParticipants);
 // Mendapatkan semua Post dengan lazy loading
 router.get('/post', PostsController.getPosts);
 router.get('/trends', PostsController.getPostsByTrends);
@@ -49,5 +48,14 @@ router.delete('/:id', auth, PostsController.deletePost);
 router.delete('/:id', authVolunteer, PostsController.deletePost);
 
 router.get('/user/:userId', auth, PostsController.getPostsByUser);
+
+// Membuat komentar baru
+router.post('/:postId/comments', auth, commentController.createComment);
+
+// Mengupdate komentar berdasarkan ID
+router.put('/:postId/comments/:commentId', auth, commentController.updateComment);
+
+// Menghapus komentar berdasarkan ID
+router.delete('/:postId/comments/:commentId', auth, commentController.deleteComment);
 
 module.exports = router;

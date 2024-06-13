@@ -281,8 +281,36 @@ exports.getPostById = async (req, res) => {
             profile: true,
           },
         },
-        comments: true,
-        participants: true,
+        comments: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          include: {
+            owner: {
+              include: {
+                profile: true,
+              },
+            },
+          }
+        },
+        participants: {
+          select: {
+            participant: {
+              select: {
+                email: true,
+                username: true,
+                role: true,
+                profile: {
+                  select: {
+                    photo: true,
+                    name: true,
+                    headTitle: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
