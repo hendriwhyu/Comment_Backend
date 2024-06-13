@@ -17,7 +17,6 @@ router.get('/post', PostsController.getPosts);
 router.get('/trends', PostsController.getPostsByTrends);
 router.get('/bookmarks/:userId', PostsController.getPostsBookmarksByUser);
 //  Mendapatkan Post by id
-
 router.get('/:postId', getPostById);
 // Mendapatkan Post berdasarkan title dengan pencarian (search)
 router.get('/', PostsController.getPostByTitle);

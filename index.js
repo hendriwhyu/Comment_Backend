@@ -14,7 +14,7 @@ dotenv.config();
 
 const app = express();
 
-// Izin Cors
+// Izin Corss
 app.use(cors()); // Izin Cors
 
 // Init Middleware

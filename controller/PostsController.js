@@ -139,6 +139,52 @@ exports.getPostsByTrends = async (req, res) => {
   }
 };
 
+exports.getPostsUpcoming = async (req, res) => {
+  try {
+    const postsUpcoming = await prisma.posts.findMany({
+      where: {
+        startDate: {
+          gte: new Date(),
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+      },
+      orderBy: {
+        startDate: 'asc',
+      },
+    });
+    res.json({ status: 'success', msg: 'Posts Upcoming fetched', data: postsUpcoming });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+}
+
 exports.getPostsBookmarksByUser = async (req, res) => {
   const { userId } = req.params;
 
