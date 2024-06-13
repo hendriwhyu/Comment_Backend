@@ -1,20 +1,17 @@
 const prisma = require('../utils/Prisma');
 
-exports.joinEvent = async (req, res) => {
-  const { eventId, userId } = req.body;
+exports.jointEvent = async (req, res) => {
+  const userId = req.user.id;
+  const { eventId } = req.body;
 
   try {
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
-    if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
-    }
-
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
         userId: userId,
-        eventId: eventId,
-      },
+        eventId: eventId
+      }
     });
+
     if (userJoinEvent) {
       return res.status(400).json({ msg: 'Already joined this event' });
     }
@@ -22,41 +19,65 @@ exports.joinEvent = async (req, res) => {
     await prisma.userJoinEvents.create({
       data: {
         eventId,
-        userId,
+        userId: userId,
         joinDate: new Date(),
         isActive: true,
-      },
+      }
     });
 
-    res.json({ status: 'success', msg: 'Joined event successfully' });
+    res.json({ msg: 'Joined event successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 };
 
-exports.leaveEvent = async (req, res) => {
-  const { eventId, userId } = req.body;
+exports.userLeave = async (req, res) => {
+  const userId = req.user.id;
+  const { eventId } = req.body;
 
   try {
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
-    if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
-    }
-
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
         userId: userId,
-        eventId: eventId,
-      },
+        eventId: eventId
+      }
     });
+
     if (!userJoinEvent) {
       return res.status(400).json({ msg: 'Not joined this event' });
     }
 
-    await prisma.userJoinEvents.delete({ where: { userId: userId } });
+    await prisma.userJoinEvent.delete({ where: { id: userJoinEvent.id } });
 
-    res.json({ status: 'success', msg: 'Left event successfully' });
+    res.json({ msg: 'Left event successfully' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getUserJointEvent = async (req, res) => {
+  try {
+    const userJoinEvents = await prisma.userJoinEvents.findMany();
+    res.json(userJoinEvents);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getUserJointEventById =  async (req, res) => {
+  try {
+    const userJoinEvent = await prisma.userJoinEvents.findUnique({
+      where: { id: parseInt(req.params.id) }
+    });
+
+    if (!userJoinEvent) {
+      return res.status(404).json({ msg: 'User Join Event not found' });
+    }
+
+    res.json(userJoinEvent);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
