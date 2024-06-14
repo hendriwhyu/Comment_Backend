@@ -7,14 +7,16 @@ const {
   getPostById,
 } = require('../controller/PostsController');
 const PostsController = require('../controller/PostsController');
-const commentController = require('../controller/CommentController');
+const commentController = require('../controller/commentController');
 const { upload } = require('../utils/File');
 const router = express.Router();
 
 // Mendapatkan semua Post dengan lazy loading
 router.get('/post', PostsController.getPosts);
 router.get('/trends', PostsController.getPostsByTrends);
+router.get('/upcoming', PostsController.getPostsUpcoming);
 router.get('/bookmarks/:userId', PostsController.getPostsBookmarksByUser);
+
 //  Mendapatkan Post by id
 router.get('/:postId', getPostById);
 // Mendapatkan Post berdasarkan title dengan pencarian (search)

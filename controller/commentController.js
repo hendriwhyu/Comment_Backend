@@ -1,16 +1,5 @@
 const prisma = require('../utils/Prisma');
 
-// Mendapatkan semua komentar
-exports.getAllComments = async (req, res) => {
-  try {
-    const comments = await prisma.comments.findMany();
-    res.json(comments);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-};
-
 // Mendapatkan komentar dengan pagination dan informasi profil
 exports.getComments = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
@@ -73,8 +62,6 @@ exports.createComment = async (req, res) => {
   const { postId } = req.params;
 
   try {
-    const userId = req.user.id; // Asumsi bahwa user id ada di req.user.id setelah otentikasi
-
     const profile = await prisma.profiles.findUnique({
       where: { userId },
     });

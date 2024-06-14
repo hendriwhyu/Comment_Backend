@@ -25,7 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/protected', protectedRoutes);
-app.use('/api/join', joinRoutes);
+app.use('/api/events', joinRoutes);
 app.use('/api/home', homeRoutes);
 
 // Start event cleanup process

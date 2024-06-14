@@ -112,7 +112,9 @@ exports.getPostsByTrends = async (req, res) => {
         bookmarks: true,
         participants: true,
         _count: {
-          select: { comments: true },
+          select: {
+            comments: true,
+          },
         },
       },
       orderBy: {
@@ -140,8 +142,11 @@ exports.getPostsUpcoming = async (req, res) => {
   try {
     const postsUpcoming = await prisma.posts.findMany({
       where: {
-        startDate: {
-          gte: new Date(),
+        category: 'Event',
+        AND: {
+          startDate: {
+            gte: new Date(),
+          },
         },
       },
       select: {
@@ -283,7 +288,7 @@ exports.getPostById = async (req, res) => {
         },
         comments: {
           orderBy: {
-            createdAt: 'desc'
+            createdAt: 'desc',
           },
           include: {
             owner: {
@@ -291,22 +296,13 @@ exports.getPostById = async (req, res) => {
                 profile: true,
               },
             },
-          }
+          },
         },
         participants: {
-          select: {
-            participant: {
-              select: {
-                email: true,
-                username: true,
-                role: true,
-                profile: {
-                  select: {
-                    photo: true,
-                    name: true,
-                    headTitle: true,
-                  },
-                },
+          include: {
+            owner: {
+              include: {
+                profile: true,
               },
             },
           },
@@ -594,6 +590,28 @@ exports.getPostsByUser = async (req, res) => {
   try {
     const posts = await prisma.posts.findMany({
       where: { ownerId: userId },
+      select: {
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        owner: {
+          select: {
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        participants: true,
+        bookmarks: true,
+      },
     });
     res.json({ status: 'success', msg: 'Posts fetched', data: posts });
   } catch (err) {

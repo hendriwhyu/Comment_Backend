@@ -41,8 +41,8 @@ model UserJoinEvents {
   eventId     String   @db.Uuid
   joinDate    DateTime @db.Timestamptz(6)
   isActive    Boolean
-  event       Posts    @relation(fields: [eventId], references: [id])
-  participant Users    @relation(fields: [userId], references: [id])
+  posts       Posts    @relation(fields: [eventId], references: [id])
+  owner Users    @relation(fields: [userId], references: [id])
   @@id([userId, eventId])
 }
 

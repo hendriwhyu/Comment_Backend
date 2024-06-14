@@ -81,8 +81,32 @@ const UserController = {
               phone: true,
             },
           },
-          recentEvents: true,
-          posts: true,
+          recentEvents: {
+            include: {
+              owner: {
+                select: {
+                  username: true,
+                  id: true,
+                  username: true,
+                  role: true,
+                  profile: true
+                },
+              }
+            },
+          },
+          posts: {
+            include: {
+              owner: {
+                select: {
+                  username: true,
+                  id: true,
+                  username: true,
+                  role: true,
+                  profile: true
+                },
+              }
+            }
+          },
         },
       });
       res.json({ status: 'success', msg: 'User fetched', data: user });
@@ -135,7 +159,6 @@ const UserController = {
       res.status(500).send('Server error');
     }
   },
-
 
   // @route    DELETE api/profile/:id
   // @desc     Delete profile

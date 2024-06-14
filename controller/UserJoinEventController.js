@@ -1,31 +1,81 @@
 const prisma = require('../utils/Prisma');
-
+exports.getPostsByRecentJoin = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const posts = await prisma.posts.findMany({
+      where: {
+        participants: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    res.status(200).json({
+      status: 'success',
+      msg: 'Posts fetched',
+      data: posts,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 exports.jointEvent = async (req, res) => {
-  const userId = req.user.id;
-  const { eventId } = req.body;
-
+  const { userId } = req.body;
+  const { eventId } = req.params;
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
         userId: userId,
-        eventId: eventId
-      }
+        eventId: eventId,
+      },
     });
 
     if (userJoinEvent) {
       return res.status(400).json({ msg: 'Already joined this event' });
     }
 
-    await prisma.userJoinEvents.create({
+    const joinEvent = await prisma.userJoinEvents.create({
       data: {
-        eventId,
+        eventId: eventId,
         userId: userId,
         joinDate: new Date(),
         isActive: true,
-      }
+      },
     });
 
-    res.json({ msg: 'Joined event successfully' });
+    res.json({ msg: 'Joined event successfully', data: joinEvent });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -33,22 +83,29 @@ exports.jointEvent = async (req, res) => {
 };
 
 exports.userLeave = async (req, res) => {
-  const userId = req.user.id;
-  const { eventId } = req.body;
+  const { userId } = req.body;
+  const { eventId } = req.params;
 
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
         userId: userId,
-        eventId: eventId
-      }
+        eventId: eventId,
+      },
     });
 
     if (!userJoinEvent) {
       return res.status(400).json({ msg: 'Not joined this event' });
     }
 
-    await prisma.userJoinEvent.delete({ where: { id: userJoinEvent.id } });
+    await prisma.userJoinEvents.delete({
+      where: {
+        userId_eventId: {
+          userId: userId,
+          eventId: eventId,
+        },
+      },
+    });
 
     res.json({ msg: 'Left event successfully' });
   } catch (err) {
@@ -67,10 +124,10 @@ exports.getUserJointEvent = async (req, res) => {
   }
 };
 
-exports.getUserJointEventById =  async (req, res) => {
+exports.getUserJointEventById = async (req, res) => {
   try {
     const userJoinEvent = await prisma.userJoinEvents.findUnique({
-      where: { id: parseInt(req.params.id) }
+      where: { id: parseInt(req.params.id) },
     });
 
     if (!userJoinEvent) {
