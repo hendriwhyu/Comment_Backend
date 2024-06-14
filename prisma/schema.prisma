@@ -68,7 +68,7 @@ model comments {
   profileId String? @db.Uuid
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
-  Posts     Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  posts     Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   User      Users?   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
