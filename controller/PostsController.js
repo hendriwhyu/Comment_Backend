@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const prisma = require('../utils/Prisma');
+const bcrypt = require('bcryptjs');
+
 
 // Mendapatkan post dengan lazy loading
 exports.getPosts = async (req, res) => {
@@ -192,7 +194,7 @@ exports.getPostsUpcoming = async (req, res) => {
 };
 
 exports.getPostsBookmarksByUser = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user.id;
 
   try {
     // Mengecek apakah userId diberikan
@@ -278,7 +280,7 @@ exports.cleanUpPosts = async () => {
 exports.getPostById = async (req, res) => {
   const { postId } = req.params;
   try {
-    const posts = await prisma.posts.findUnique({
+    const post = await prisma.posts.findUnique({
       where: { id: postId },
       include: {
         owner: {
@@ -310,16 +312,33 @@ exports.getPostById = async (req, res) => {
       },
     });
 
-    if (!posts) {
-      return res.status(404).json({ msg: 'post not found' });
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found' });
     }
 
-    res.json({ data: posts });
+    // Transform response to exclude password
+    const responseData = {
+      ...post,
+      owner: {
+        ...post.owner,
+        password: undefined,
+      },
+      comments: post.comments.map(comment => ({
+        ...comment,
+        User: {
+          ...comment.User,
+          password: undefined,
+        }
+      }))
+    };
+
+    res.json({ data: responseData });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 };
+
 
 // Mendapatkan post berdasarkan title
 exports.getPostByTitle = async (req, res) => {
@@ -382,7 +401,6 @@ exports.getPostByExactTitle = async (req, res) => {
 // Membuat post baru
 exports.createPost = async (req, res) => {
   const {
-    ownerId,
     title,
     category,
     description,
@@ -390,7 +408,7 @@ exports.createPost = async (req, res) => {
     endDate,
     maxParticipants,
   } = req.body;
-
+  const ownerId = req.user.id;
   try {
     let newPost;
     let fullPath = null;
@@ -479,6 +497,11 @@ exports.updatePost = async (req, res) => {
       return res.status(404).json({ msg: 'Post not found' });
     }
 
+    // Pastikan hanya owner yang dapat memperbarui post
+    if (oldPost.ownerId !== req.user.id) {
+      return res.status(403).json({ msg: 'You are not authorized to update this post' });
+    }
+
     // Periksa apakah ada gambar baru di dalam permintaan
     if (req.file) {
       // Dapatkan nama file gambar lama dari post lama
@@ -520,7 +543,7 @@ exports.updatePost = async (req, res) => {
 exports.deletePost = async (req, res) => {
   try {
     const post = await prisma.posts.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.postId },
     });
 
     if (!post) {
@@ -539,7 +562,7 @@ exports.deletePost = async (req, res) => {
 
     // Hapus post dari database
     await prisma.posts.delete({
-      where: { id: req.params.id },
+      where: { id: req.params.postId },
     });
 
     res.json({ msg: 'Post removed' });
@@ -586,7 +609,7 @@ exports.getParticipants = async (req, res) => {
 };
 
 exports.getPostsByUser = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user.id;
   try {
     const posts = await prisma.posts.findMany({
       where: { ownerId: userId },
@@ -614,6 +637,88 @@ exports.getPostsByUser = async (req, res) => {
       },
     });
     res.json({ status: 'success', msg: 'Posts fetched', data: posts });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+// Membuat post bookmark
+exports.createBookmark = async (req, res) => {
+  const { postId } = req.body;
+
+  try {
+    // Periksa apakah pengguna telah login
+    const userId = req.user.id;
+
+    // Periksa apakah bookmark sudah ada
+    const existingBookmark = await prisma.bookmarksOnPosts.findUnique({
+      where: {
+        postId_userId: {
+          postId,
+          userId,
+        },
+      },
+    });
+
+    if (existingBookmark) {
+      return res.status(400).json({ msg: 'Bookmark already exists' });
+    }
+
+    // Buat bookmark baru
+    const newBookmark = await prisma.bookmarksOnPosts.create({
+      data: {
+        postId,
+        userId,
+      },
+    });
+
+    res.json({ status: 'success', msg: 'Bookmark created', data: newBookmark });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    // Verifikasi pengguna
+    const user = await prisma.users.findUnique({
+      where: {
+        id: req.user.id,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Verifikasi kata sandi lama
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Incorrect old password' });
+    }
+
+    // Validasi kata sandi baru
+    if (newPassword.length < 6) {
+      return res.status(400).json({ msg: 'New password must be at least 6 characters long' });
+    }
+
+    // Enkripsi kata sandi baru
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Perbarui kata sandi di basis data
+    await prisma.users.update({
+      where: {
+        id: req.user.id,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    res.json({ msg: 'Password updated successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const dotenv = require('dotenv');
+const auth = require('../middleware/auth')
 const AuthController = require('../controller/AuthController');
+const PostsController = require('../controller/PostsController')
 
 dotenv.config();
 
@@ -31,4 +33,6 @@ router.post(
   AuthController.login
 );
 
+//change passowrd
+router.put('/password', auth, PostsController.changePassword);
 module.exports = router;

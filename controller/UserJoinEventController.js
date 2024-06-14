@@ -1,6 +1,6 @@
 const prisma = require('../utils/Prisma');
 exports.getPostsByRecentJoin = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user.id;
   try {
     const posts = await prisma.posts.findMany({
       where: {
@@ -52,7 +52,7 @@ exports.getPostsByRecentJoin = async (req, res) => {
   }
 };
 exports.jointEvent = async (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.id;
   const { eventId } = req.params;
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
@@ -83,7 +83,7 @@ exports.jointEvent = async (req, res) => {
 };
 
 exports.userLeave = async (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.id;
   const { eventId } = req.params;
 
   try {

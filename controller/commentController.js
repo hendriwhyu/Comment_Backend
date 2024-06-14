@@ -5,6 +5,11 @@ exports.getComments = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   const { eventId } = req.params;
 
+  // Validasi UUID
+  if (!uuidValidate(eventId)) {
+    return res.status(400).json({ msg: 'Invalid eventId format' });
+  }
+
   try {
     const offset = (page - 1) * limit;
     const comments = await prisma.comments.findMany({
@@ -12,11 +17,16 @@ exports.getComments = async (req, res) => {
         eventId,
       },
       include: {
-        profile: {
+        User: {
+          // Sesuaikan nama relasi dengan model Anda
           select: {
-            name: true,
-            photo: true,
-            headTitle: true,
+            profile: {
+              select: {
+                name: true,
+                photo: true,
+                headTitle: true,
+              },
+            },
           },
         },
       },
@@ -39,9 +49,9 @@ exports.getComments = async (req, res) => {
       content: comment.content,
       createdAt: comment.createdAt,
       owner: {
-        name: comment.profile.name,
-        photo: comment.profile.photo,
-        headTitle: comment.profile.headTitle,
+        name: comment.User.profile.name,
+        photo: comment.User.profile.photo,
+        headTitle: comment.User.profile.headTitle,
       },
     }));
 
@@ -56,24 +66,16 @@ exports.getComments = async (req, res) => {
   }
 };
 
-
 exports.createComment = async (req, res) => {
-  const { content, userId } = req.body;
+  const { content } = req.body;
   const { postId } = req.params;
 
   try {
-    const profile = await prisma.profiles.findUnique({
-      where: { userId },
-    });
-
-    if (!profile) {
-      return res.status(400).json({ msg: 'Profile not found' });
-    }
-
+    const userId = req.user.id;
     const newComment = await prisma.comments.create({
       data: {
         content,
-        postId,
+        postId: postId,
         userId: userId,
       },
     });
@@ -84,7 +86,6 @@ exports.createComment = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
-
 
 // Menghapus komentar berdasarkan eventId jika event sudah berakhir
 exports.deleteCommentsForEndedEvents = async () => {
@@ -111,15 +112,28 @@ exports.updateComment = async (req, res) => {
       where: {
         id: commentId,
       },
+      include: {
+        owner: true, // Including the User to check the owner of the comment
+      },
     });
 
     if (!comment) {
       return res.status(404).json({ msg: 'Comment not found' });
     }
 
+    // Ensure only the owner can update the comment
+    if (comment.userId !== req.user.id) {
+      return res
+        .status(403)
+        .json({ msg: 'You are not authorized to update this comment' });
+    }
+
     const updatedComment = await prisma.comments.update({
       where: {
         id: commentId,
+      },
+      data: {
+        content,
       },
       include: {
         owner: {
@@ -127,9 +141,6 @@ exports.updateComment = async (req, res) => {
             profile: true,
           },
         },
-      },
-      data: {
-        content,
       },
     });
 

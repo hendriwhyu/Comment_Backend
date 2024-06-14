@@ -1,6 +1,7 @@
 const prisma = require('../utils/Prisma');
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const UserController = {
   getAllUsers: async (req, res) => {
@@ -185,5 +186,6 @@ const UserController = {
     }
   },
 };
+
 
 module.exports = UserController;

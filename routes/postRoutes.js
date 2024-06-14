@@ -2,10 +2,7 @@ const express = require('express');
 const { check } = require('express-validator');
 const authVolunteer = require('../middleware/authVolunteer'); // Middleware untuk memeriksa volunteer
 const auth = require('../middleware/auth'); // Middleware untuk memeriksa autentikasi(user)
-const {
-  getParticipants,
-  getPostById,
-} = require('../controller/PostsController');
+const { getPostById } = require('../controller/PostsController');
 const PostsController = require('../controller/PostsController');
 const commentController = require('../controller/commentController');
 const { upload } = require('../utils/File');
@@ -15,8 +12,8 @@ const router = express.Router();
 router.get('/post', PostsController.getPosts);
 router.get('/trends', PostsController.getPostsByTrends);
 router.get('/upcoming', PostsController.getPostsUpcoming);
-router.get('/bookmarks/:userId', PostsController.getPostsBookmarksByUser);
-
+router.get('/bookmarks', auth, PostsController.getPostsBookmarksByUser);
+router.post('/bookmarks', auth, PostsController.createBookmark);
 //  Mendapatkan Post by id
 router.get('/:postId', getPostById);
 // Mendapatkan Post berdasarkan title dengan pencarian (search)
@@ -42,22 +39,35 @@ router.post(
 );
 
 // Memperbarui Post berdasarkan ID
-router.put('/:postId', [auth, upload.single('image'),], PostsController.updatePost);
+router.put(
+  '/:postId',
+  [auth, upload.single('image')],
+  PostsController.updatePost,
+);
 router.put('/:postId', authVolunteer, PostsController.updatePost);
 
 // Menghapus Post berdasarkan ID
-router.delete('/:id', auth, PostsController.deletePost);
-router.delete('/:id', authVolunteer, PostsController.deletePost);
+router.delete('/:postId', auth, PostsController.deletePost);
 
+// Mendaptan Post dirinya sendiri
 router.get('/user/:userId', auth, PostsController.getPostsByUser);
 
 // Membuat komentar baru
 router.post('/:postId/comments', auth, commentController.createComment);
+router.get('/:postId/comments', auth, commentController.getComments);
 
 // Mengupdate komentar berdasarkan ID
-router.put('/:postId/comments/:commentId', auth, commentController.updateComment);
+router.put(
+  '/:postId/comments/:commentId',
+  auth,
+  commentController.updateComment,
+);
 
 // Menghapus komentar berdasarkan ID
-router.delete('/:postId/comments/:commentId', auth, commentController.deleteComment);
+router.delete(
+  '/:postId/comments/:commentId',
+  auth,
+  commentController.deleteComment,
+);
 
 module.exports = router;
