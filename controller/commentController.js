@@ -67,20 +67,20 @@ exports.getComments = async (req, res) => {
   }
 };
 
-// Membuat komentar baru
+
 exports.createComment = async (req, res) => {
   const { content, userId } = req.body;
   const { postId } = req.params;
 
   try {
-    const userComment = await prisma.users.findUnique({
-      where: {
-        id: userId,
-      },
+    const userId = req.user.id; // Asumsi bahwa user id ada di req.user.id setelah otentikasi
+
+    const profile = await prisma.profiles.findUnique({
+      where: { userId },
     });
 
-    if (!userComment) {
-      return res.status(400).json({ msg: 'User not found' });
+    if (!profile) {
+      return res.status(400).json({ msg: 'Profile not found' });
     }
 
     const newComment = await prisma.comments.create({
@@ -91,12 +91,13 @@ exports.createComment = async (req, res) => {
       },
     });
 
-    res.json(newComment);
+    res.json({ status: 'success', data: newComment });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 };
+
 
 // Menghapus komentar berdasarkan eventId jika event sudah berakhir
 exports.deleteCommentsForEndedEvents = async () => {
