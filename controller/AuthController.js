@@ -16,9 +16,7 @@ const AuthController = {
       const existingUser = await prisma.users.findUnique({ where: { email } });
 
       if (existingUser) {
-        return res
-          .status(400)
-          .json({ errors: [{ msg: 'User already exists' }] });
+        return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
       }
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
@@ -28,15 +26,14 @@ const AuthController = {
           email,
           password: hashedPassword,
           role: role || 'user', // Set role default 'user' jika user tidak diisi
-        },
+        }
       });
       await prisma.profiles.create({
         data: {
           name: username,
-          userId: newUser.id,
-          photo: `https://api.dicebear.com/8.x/identicon/svg?seed=${username}`,
-        },
-      });
+          userId: newUser.id
+        }
+      })
 
       res.json({ status: 'success', message: 'User created successfully' });
     } catch (err) {
@@ -64,9 +61,7 @@ const AuthController = {
 
       if (!isMatch) {
         console.log('Password does not match');
-        return res
-          .status(400)
-          .json({ errors: [{ msg: 'Invalid credentials' }] });
+        return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
       }
 
       const payload = {
@@ -85,6 +80,32 @@ const AuthController = {
           res.json({ token });
         },
       );
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
+  getAllUsers: async (req, res) => {
+    try {
+      const users = await prisma.users.findMany();
+      res.json(users);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
+  getUserByToken: async (req, res) => {
+    try {
+      const user = await prisma.users.findUnique({
+        where: { id: req.user.id },
+        include: { profile: true }
+      });
+  
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+  
+      res.json(user.profile);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');

@@ -1,13 +1,16 @@
+const express = require('express');
+const auth = require('../middleware/auth');
 const prisma = require('../utils/Prisma');
+const router = express.Router();
 
-exports.jointEvent = async (req, res) => {
+router.post('/join', auth, async (req, res) => {
   const userId = req.user.id;
   const { eventId } = req.body;
 
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
-        userId: userId,
+        profileId: userId,
         eventId: eventId
       }
     });
@@ -19,7 +22,7 @@ exports.jointEvent = async (req, res) => {
     await prisma.userJoinEvents.create({
       data: {
         eventId,
-        userId: userId,
+        profileId: userId,
         joinDate: new Date(),
         isActive: true,
       }
@@ -30,16 +33,16 @@ exports.jointEvent = async (req, res) => {
     console.error(err.message);
     res.status(500).send('Server error');
   }
-};
+});
 
-exports.userLeave = async (req, res) => {
+router.post('/leave', auth, async (req, res) => {
   const userId = req.user.id;
   const { eventId } = req.body;
 
   try {
     const userJoinEvent = await prisma.userJoinEvents.findFirst({
       where: {
-        userId: userId,
+        profileId: userId,
         eventId: eventId
       }
     });
@@ -55,9 +58,9 @@ exports.userLeave = async (req, res) => {
     console.error(err.message);
     res.status(500).send('Server error');
   }
-};
+});
 
-exports.getUserJointEvent = async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const userJoinEvents = await prisma.userJoinEvents.findMany();
     res.json(userJoinEvents);
@@ -65,9 +68,9 @@ exports.getUserJointEvent = async (req, res) => {
     console.error(err.message);
     res.status(500).send('Server error');
   }
-};
+});
 
-exports.getUserJointEventById =  async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const userJoinEvent = await prisma.userJoinEvents.findUnique({
       where: { id: parseInt(req.params.id) }
@@ -82,4 +85,6 @@ exports.getUserJointEventById =  async (req, res) => {
     console.error(err.message);
     res.status(500).send('Server error');
   }
-};
+});
+
+module.exports = router;

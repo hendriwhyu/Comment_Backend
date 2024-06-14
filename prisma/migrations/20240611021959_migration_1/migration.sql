@@ -15,6 +15,8 @@ CREATE TABLE "Posts" (
     "maxParticipants" INTEGER,
     "image" VARCHAR(255),
     "ownerId" UUID NOT NULL,
+    "bookmarks" UUID[] DEFAULT ARRAY[]::UUID[],
+    "totalParticipants" INTEGER DEFAULT 1,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
@@ -33,13 +35,14 @@ CREATE TABLE "Profiles" (
 );
 
 -- CreateTable
-CREATE TABLE "UserJoinEvents" (
-    "userId" UUID NOT NULL,
+CREATE TABLE "UserJoinPosts" (
+    "id" UUID NOT NULL,
     "eventId" UUID NOT NULL,
+    "profileId" UUID NOT NULL,
     "joinDate" TIMESTAMPTZ(6) NOT NULL,
     "isActive" BOOLEAN NOT NULL,
 
-    CONSTRAINT "UserJoinEvents_pkey" PRIMARY KEY ("userId","eventId")
+    CONSTRAINT "UserJoinPosts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -56,23 +59,15 @@ CREATE TABLE "Users" (
 );
 
 -- CreateTable
-CREATE TABLE "Comments" (
+CREATE TABLE "comments" (
     "id" UUID NOT NULL,
-    "postId" UUID NOT NULL,
+    "eventId" UUID NOT NULL,
     "content" VARCHAR(255) NOT NULL,
-    "userId" UUID,
+    "profileId" UUID,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
-    CONSTRAINT "Comments_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "BookmarksOnPosts" (
-    "userId" UUID NOT NULL,
-    "postId" UUID NOT NULL,
-
-    CONSTRAINT "BookmarksOnPosts_pkey" PRIMARY KEY ("postId","userId")
+    CONSTRAINT "comments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -91,19 +86,10 @@ ALTER TABLE "Posts" ADD CONSTRAINT "Posts_ownerId_fkey" FOREIGN KEY ("ownerId") 
 ALTER TABLE "Profiles" ADD CONSTRAINT "Profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserJoinEvents" ADD CONSTRAINT "UserJoinEvents_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Posts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "UserJoinPosts" ADD CONSTRAINT "UserJoinPosts_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Posts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserJoinEvents" ADD CONSTRAINT "UserJoinEvents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "comments" ADD CONSTRAINT "comments_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Comments" ADD CONSTRAINT "Comments_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Comments" ADD CONSTRAINT "Comments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "BookmarksOnPosts" ADD CONSTRAINT "BookmarksOnPosts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "BookmarksOnPosts" ADD CONSTRAINT "BookmarksOnPosts_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "comments" ADD CONSTRAINT "comments_profileId_fkey" FOREIGN KEY ("profileId") REFERENCES "Users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

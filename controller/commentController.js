@@ -28,14 +28,14 @@ exports.getComments = async (req, res) => {
             name: true,
             photo: true,
             headTitle: true,
-          },
-        },
+          }
+        }
       },
       take: parseInt(limit),
       skip: parseInt(offset),
       orderBy: {
         createdAt: 'asc',
-      },
+      }
     });
 
     const total = await prisma.comments.count({
@@ -45,7 +45,7 @@ exports.getComments = async (req, res) => {
     });
 
     const totalPages = Math.ceil(total / limit);
-    const commentData = comments.map((comment) => ({
+    const commentData = comments.map(comment => ({
       id: comment.id,
       content: comment.content,
       createdAt: comment.createdAt,
@@ -53,7 +53,7 @@ exports.getComments = async (req, res) => {
         name: comment.profile.name,
         photo: comment.profile.photo,
         headTitle: comment.profile.headTitle,
-      },
+      }
     }));
 
     res.json({
@@ -69,25 +69,25 @@ exports.getComments = async (req, res) => {
 
 // Membuat komentar baru
 exports.createComment = async (req, res) => {
-  const { content, userId } = req.body;
-  const { postId } = req.params;
+  const { content } = req.body;
+  const { eventId } = req.params;
 
   try {
-    const userComment = await prisma.users.findUnique({
+    const profile = await prisma.profiles.findUnique({
       where: {
-        id: userId,
+        userId: req.user.id,
       },
     });
 
-    if (!userComment) {
-      return res.status(400).json({ msg: 'User not found' });
+    if (!profile) {
+      return res.status(400).json({ msg: 'Profile not found' });
     }
 
     const newComment = await prisma.comments.create({
       data: {
         content,
-        postId,
-        userId: userId,
+        eventId,
+        profileId: profile.id,
       },
     });
 
@@ -116,12 +116,11 @@ exports.deleteCommentsForEndedEvents = async () => {
 // Mengupdate komentar berdasarkan ID
 exports.updateComment = async (req, res) => {
   const { content } = req.body;
-  const { commentId } = req.params;
 
   try {
     const comment = await prisma.comments.findUnique({
       where: {
-        id: commentId,
+        id: parseInt(req.params.id),
       },
     });
 
@@ -129,23 +128,16 @@ exports.updateComment = async (req, res) => {
       return res.status(404).json({ msg: 'Comment not found' });
     }
 
-    const updatedComment = await prisma.comments.update({
+    await prisma.comment.update({
       where: {
-        id: commentId,
-      },
-      include: {
-        owner: {
-          include: {
-            profile: true,
-          },
-        },
+        id: parseInt(req.params.id),
       },
       data: {
         content,
       },
     });
 
-    res.json({ msg: 'Comment updated', data: updatedComment });
+    res.json({ msg: 'Comment updated' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -157,7 +149,7 @@ exports.deleteComment = async (req, res) => {
   try {
     const comment = await prisma.comments.findUnique({
       where: {
-        id: req.params.commentId,
+        id: parseInt(req.params.id),
       },
     });
 
@@ -167,7 +159,7 @@ exports.deleteComment = async (req, res) => {
 
     await prisma.comments.delete({
       where: {
-        id: req.params.commentId,
+        id: parseInt(req.params.id),
       },
     });
 

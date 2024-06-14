@@ -3,30 +3,30 @@ const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 
 const UserController = {
-  getAllUsers: async (req, res) => {
+  // @route    GET api/profile
+  // @desc     Get all profiles
+  // @access   Private
+  getProfileUsers: async (req, res) => {
     try {
-      const users = await prisma.users.findMany({
+      const profiles = await prisma.profiles.findMany({
         select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          profile: {
+          photo: true,
+          name: true,
+          headTitle: true,
+          user: {
             select: {
-              name: true,
-              headTitle: true,
-              phone: true,
-              photo: true,
+              email: true,
             },
           },
         },
       });
-      res.json({ status: 'success', msg: 'Users fetched', data: users });
+      res.json(profiles);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
     }
   },
+
   // @route    GET api/profile/me
   // @desc     Get user by Token
   // @access   Private
@@ -63,29 +63,25 @@ const UserController = {
   // @route    GET api/profile/:id
   // @desc     Get profile by ID
   // @access   Private
-  getUserById: async (req, res) => {
+  getProfileById: async (req, res) => {
     try {
-      const { userId } = req.params;
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
+      const profile = await prisma.profiles.findUnique({
+        where: { id: req.params.id },
         select: {
-          id: true,
-          email: true,
-          username: true,
-          role: true,
-          profile: {
+          photo: true,
+          name: true,
+          headTitle: true,
+          Users: {
             select: {
-              photo: true,
-              name: true,
-              headTitle: true,
-              phone: true,
+              email: true,
             },
           },
-          recentEvents: true,
-          posts: true,
         },
       });
-      res.json({ status: 'success', msg: 'User fetched', data: user });
+      if (!profile) {
+        return res.status(404).json({ msg: 'Profile not found' });
+      }
+      res.json(profile);
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
@@ -104,8 +100,7 @@ const UserController = {
     const { photo, name, headTitle, phone } = req.body;
 
     try {
-      // Check if profile exists
-      let profile = await prisma.profiles.findUnique({
+      let profile = await prisma.profile.findUnique({
         where: { userId: req.user.id },
       });
 
@@ -136,26 +131,26 @@ const UserController = {
     }
   },
 
-
   // @route    DELETE api/profile/:id
   // @desc     Delete profile
   // @access   Private
-  deleteUserProfile: async (req, res) => {
+  deleteProfile: async (req, res) => {
     try {
-      const user = await prisma.users.findUnique({
+      const profile = await prisma.profiles.findUnique({
         where: {
-          id: req.params.userId,
+          id: req.params.id,
+          userId: req.user.id,
         },
       });
 
-      if (!user) {
+      if (!profile) {
         return res.status(404).json({ msg: 'Profile not found' });
       }
 
-      await prisma.users.delete({
+      await prisma.profile.delete({
         where: { id: req.params.id },
       });
-      res.json({ status: 'success', msg: 'User deleted' });
+      res.json({ msg: 'Profile deleted' });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
