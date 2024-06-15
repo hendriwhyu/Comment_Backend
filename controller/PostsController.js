@@ -1,5 +1,8 @@
+const fs = require('fs');
 const path = require('path');
 const prisma = require('../utils/Prisma');
+const bcrypt = require('bcryptjs');
+
 
 // Mendapatkan post dengan lazy loading
 exports.getPosts = async (req, res) => {
@@ -20,29 +23,41 @@ exports.getPosts = async (req, res) => {
 
     // Ambil post yang masih berlaku dengan pagination
     const posts = await prisma.posts.findMany({
-      where: {
-        endDate: {
-          gt: now,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
         },
-      },
-      include: {
-        owner: true,
+        bookmarks: true,
+        participants: true,
       },
       take: parseInt(limit),
       skip: parseInt(offset),
       orderBy: {
-        startDate: 'asc',
+        createdAt: 'desc',
       },
     });
 
-    const totalCount = await prisma.posts.count({
-      where: {
-        endDate: {
-          gt: now,
-        },
-      },
-    });
-
+    const totalCount = posts.length;
     const result = posts.map((post) => ({
       id: post.id,
       title: post.title,
@@ -53,23 +68,197 @@ exports.getPosts = async (req, res) => {
       maxParticipants: post.maxParticipants,
       image: post.image,
       createdAt: post.createdAt,
-      owner: {
-        photo: post.owner.photo,
-        name: post.owner.name,
-        headTitle: post.owner.headTitle,
-      },
+      owner: post.owner,
       bookmarks: post.bookmarks,
-      totalParticipants: post.totalParticipants,
+      totalParticipants: post.participants.length,
     }));
 
     res.json({
       total: totalCount,
-      pages: Math.ceil(totalCount / limit),
+      pages: +page,
       data: result,
     });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
+  }
+};
+
+exports.getPostsByTrends = async (req, res) => {
+  try {
+    const postsTrends = await prisma.posts.findMany({
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
+      orderBy: {
+        comments: {
+          _count: 'desc',
+        },
+      },
+      take: 5,
+    });
+
+    let posts = postsTrends.filter((post) => post._count.comments > 0);
+
+    if (posts.length === 0) {
+      posts = [];
+    }
+
+    res.json({ status: 'success', msg: 'Posts Trends fetched', data: posts });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getPostsUpcoming = async (req, res) => {
+  try {
+    const postsUpcoming = await prisma.posts.findMany({
+      where: {
+        category: 'Event',
+        AND: {
+          startDate: {
+            gte: new Date(),
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+      },
+      orderBy: {
+        startDate: 'asc',
+      },
+    });
+    res.json({
+      status: 'success',
+      msg: 'Posts Upcoming fetched',
+      data: postsUpcoming,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getPostsBookmarksByUser = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    // Mengecek apakah userId diberikan
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Mengambil postingan yang dibookmark oleh pengguna tertentu
+    const bookmarkedPosts = await prisma.posts.findMany({
+      where: {
+        bookmarks: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        createdAt: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        bookmarks: true,
+        participants: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Jika tidak ada postingan yang dibookmark, kembalikan array kosong
+    if (bookmarkedPosts.length === 0) {
+      return res
+        .status(200)
+        .json({ status: 'success', msg: 'No posts found', data: [] });
+    }
+
+    // Mengembalikan hasil postingan yang dibookmark oleh user tertentu
+    res.status(200).json({
+      status: 'success',
+      msg: 'Bookmarks fetched',
+      data: bookmarkedPosts,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
@@ -90,9 +279,8 @@ exports.cleanUpPosts = async () => {
 
 exports.getPostById = async (req, res) => {
   const { postId } = req.params;
-
   try {
-    const posts = await prisma.posts.findUnique({
+    const post = await prisma.posts.findUnique({
       where: { id: postId },
       include: {
         owner: {
@@ -100,21 +288,57 @@ exports.getPostById = async (req, res) => {
             profile: true,
           },
         },
-        comments: true,
-        participants: true,
+        comments: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          include: {
+            owner: {
+              include: {
+                profile: true,
+              },
+            },
+          },
+        },
+        participants: {
+          include: {
+            owner: {
+              include: {
+                profile: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    if (!posts) {
-      return res.status(404).json({ msg: 'post not found' });
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found' });
     }
 
-    res.json({ data: posts });
+    // Transform response to exclude password
+    const responseData = {
+      ...post,
+      owner: {
+        ...post.owner,
+        password: undefined,
+      },
+      comments: post.comments.map(comment => ({
+        ...comment,
+        User: {
+          ...comment.User,
+          password: undefined,
+        }
+      }))
+    };
+
+    res.json({ data: responseData });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 };
+
 
 // Mendapatkan post berdasarkan title
 exports.getPostByTitle = async (req, res) => {
@@ -132,17 +356,6 @@ exports.getPostByTitle = async (req, res) => {
             mode: 'insensitive',
           },
         },
-        include: {
-          owner: {
-            select: {
-              name: true,
-              photo: true,
-              headTitle: true,
-            },
-          },
-          comments: true,
-          participants: true,
-        },
       });
     } else {
       // Ambil semua post jika tidak ada query parameter title
@@ -155,11 +368,12 @@ exports.getPostByTitle = async (req, res) => {
           },
           comments: true,
           participants: true,
+          bookmarks: true,
         },
       });
     }
 
-    res.json({ data: posts });
+    res.json({ status: 'success', msg: 'Posts fetched', data: posts });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -187,7 +401,6 @@ exports.getPostByExactTitle = async (req, res) => {
 // Membuat post baru
 exports.createPost = async (req, res) => {
   const {
-    ownerId,
     title,
     category,
     description,
@@ -195,15 +408,18 @@ exports.createPost = async (req, res) => {
     endDate,
     maxParticipants,
   } = req.body;
+  const ownerId = req.user.id;
   try {
     let newPost;
     let fullPath = null;
-    if(req.file){
+
+    if (req.file) {
       const originalFileName = path.basename(req.file.path);
       const fileNameWithoutExtension = path.parse(originalFileName).name;
       const formattedFileName = `${fileNameWithoutExtension}.jpeg`;
-      fullPath = `/assets/${formattedFileName}`;
+      fullPath = formattedFileName;
     }
+
     if (category === 'Event') {
       newPost = await prisma.posts.create({
         data: {
@@ -233,73 +449,123 @@ exports.createPost = async (req, res) => {
       });
     }
 
+    const ownerPost = await prisma.users.findFirst({
+      where: {
+        id: ownerId,
+      },
+      select: {
+        profile: {
+          select: {
+            photo: true,
+            name: true,
+            headTitle: true,
+          },
+        },
+      },
+    });
+
+    newPost = { ...newPost, owner: ownerPost };
     res.json({ status: 'success', msg: 'Post created', data: newPost });
   } catch (err) {
     console.error(err.message);
+
+    // Hapus file yang telah diupload jika terjadi error
+    if (req.file) {
+      const tempPath = req.file.path;
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+    }
+
     res.status(500).send('Server error');
   }
 };
 
 // Memperbarui post berdasarkan ID
 exports.updatePost = async (req, res) => {
-  const {
-    title,
-    category,
-    description,
-    startDate,
-    endDate,
-    maxParticipants,
-    image,
-  } = req.body;
-  console.log(req.body);
-  const postFields = {};
-  if (title) postFields.title = title;
-  if (category) postFields.category = category;
-  if (description) postFields.description = description;
-  if (startDate) postFields.startDate = startDate;
-  if (endDate) postFields.endDate = endDate;
-  if (maxParticipants) postFields.maxParticipants = maxParticipants;
-  if (image) postFields.image = image;
+  let data = req.body;
 
   try {
-    let post = await prisma.posts.findUnique({
-      where: { id: req.params.id },
+    // Cari post lama berdasarkan ID
+    let oldPost = await prisma.posts.findUnique({
+      where: {
+        id: req.params.postId,
+      },
     });
 
-    if (!post) {
-      return res.status(404).json({ msg: 'post not found' });
+    if (!oldPost) {
+      return res.status(404).json({ msg: 'Post not found' });
     }
 
-    post = await prisma.posts.update({
+    // Pastikan hanya owner yang dapat memperbarui post
+    if (oldPost.ownerId !== req.user.id) {
+      return res.status(403).json({ msg: 'You are not authorized to update this post' });
+    }
+
+    // Periksa apakah ada gambar baru di dalam permintaan
+    if (req.file) {
+      // Dapatkan nama file gambar lama dari post lama
+      const oldImage = oldPost.image;
+
+      // Path gambar lama
+      const oldImagePath = path.join(__dirname, '../assets', oldImage);
+
+      // Hapus gambar lama jika ada
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+
+      // Update data post dengan nama file gambar baru
+      data.image = req.file.filename;
+    }
+
+    // Update data post di database
+    let post = await prisma.posts.update({
       where: {
-        id: req.params.id,
+        id: req.params.postId,
       },
-      data: postFields,
+      data,
     });
 
-    res.json({ msg: 'post updated' });
+    res.json({ msg: 'Post updated', data: post });
   } catch (err) {
     console.error(err.message);
+    if (req.file) {
+      const tempPath = req.file.path;
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+    }
     res.status(500).send('Server error');
   }
 };
-
 // Menghapus post berdasarkan ID
 exports.deletePost = async (req, res) => {
   try {
     const post = await prisma.posts.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.postId },
     });
 
     if (!post) {
-      return res.status(404).json({ msg: 'post not found' });
+      return res.status(404).json({ msg: 'Post not found' });
     }
 
+    // Periksa apakah post memiliki gambar sebelum mencoba membuat path gambar
+    if (post.image) {
+      const imagePath = path.join(__dirname, '../assets', post.image);
+
+      // Hapus gambar jika ada
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
+    // Hapus post dari database
     await prisma.posts.delete({
-      where: { id: req.params.id },
+      where: { id: req.params.postId },
     });
 
-    res.json({ msg: 'post removed' });
+    res.json({ msg: 'Post removed' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -343,12 +609,116 @@ exports.getParticipants = async (req, res) => {
 };
 
 exports.getPostsByUser = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user.id;
   try {
     const posts = await prisma.posts.findMany({
       where: { ownerId: userId },
+      select: {
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        owner: {
+          select: {
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
+              },
+            },
+          },
+        },
+        participants: true,
+        bookmarks: true,
+      },
     });
     res.json({ status: 'success', msg: 'Posts fetched', data: posts });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+// Membuat post bookmark
+exports.createBookmark = async (req, res) => {
+  const { postId } = req.body;
+
+  try {
+    // Periksa apakah pengguna telah login
+    const userId = req.user.id;
+
+    // Periksa apakah bookmark sudah ada
+    const existingBookmark = await prisma.bookmarksOnPosts.findUnique({
+      where: {
+        postId_userId: {
+          postId,
+          userId,
+        },
+      },
+    });
+
+    if (existingBookmark) {
+      return res.status(400).json({ msg: 'Bookmark already exists' });
+    }
+
+    // Buat bookmark baru
+    const newBookmark = await prisma.bookmarksOnPosts.create({
+      data: {
+        postId,
+        userId,
+      },
+    });
+
+    res.json({ status: 'success', msg: 'Bookmark created', data: newBookmark });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    // Verifikasi pengguna
+    const user = await prisma.users.findUnique({
+      where: {
+        id: req.user.id,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Verifikasi kata sandi lama
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Incorrect old password' });
+    }
+
+    // Validasi kata sandi baru
+    if (newPassword.length < 6) {
+      return res.status(400).json({ msg: 'New password must be at least 6 characters long' });
+    }
+
+    // Enkripsi kata sandi baru
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Perbarui kata sandi di basis data
+    await prisma.users.update({
+      where: {
+        id: req.user.id,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    res.json({ msg: 'Password updated successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

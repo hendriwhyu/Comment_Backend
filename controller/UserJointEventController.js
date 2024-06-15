@@ -7,7 +7,7 @@ exports.joinEvent = async (req, res) => {
   try {
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) {
-      return res.status(404).json({ msg: 'Profile not found' });
+
     }
 
     const event = await prisma.event.findUnique({ where: { id: eventId } });
