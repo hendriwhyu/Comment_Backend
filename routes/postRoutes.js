@@ -13,7 +13,8 @@ router.get('/post', PostsController.getPosts);
 router.get('/trends', PostsController.getPostsByTrends);
 router.get('/upcoming', PostsController.getPostsUpcoming);
 router.get('/bookmarks', auth, PostsController.getPostsBookmarksByUser);
-router.post('/bookmarks', auth, PostsController.createBookmark);
+router.post('/:postId/bookmarks', auth, PostsController.createBookmark);
+router.delete('/:postId/bookmarks', auth, PostsController.deleteBookmark);
 //  Mendapatkan Post by id
 router.get('/:postId', getPostById);
 // Mendapatkan Post berdasarkan title dengan pencarian (search)

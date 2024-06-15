@@ -3,7 +3,6 @@ const path = require('path');
 const prisma = require('../utils/Prisma');
 const bcrypt = require('bcryptjs');
 
-
 // Mendapatkan post dengan lazy loading
 exports.getPosts = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
@@ -58,25 +57,11 @@ exports.getPosts = async (req, res) => {
     });
 
     const totalCount = posts.length;
-    const result = posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      category: post.category,
-      description: post.description,
-      startDate: post.startDate,
-      endDate: post.endDate,
-      maxParticipants: post.maxParticipants,
-      image: post.image,
-      createdAt: post.createdAt,
-      owner: post.owner,
-      bookmarks: post.bookmarks,
-      totalParticipants: post.participants.length,
-    }));
 
     res.json({
       total: totalCount,
       pages: +page,
-      data: result,
+      data: posts,
     });
   } catch (err) {
     console.error(err.message);
@@ -309,6 +294,7 @@ exports.getPostById = async (req, res) => {
             },
           },
         },
+        bookmarks: true,
       },
     });
 
@@ -323,13 +309,13 @@ exports.getPostById = async (req, res) => {
         ...post.owner,
         password: undefined,
       },
-      comments: post.comments.map(comment => ({
+      comments: post.comments.map((comment) => ({
         ...comment,
         User: {
           ...comment.User,
           password: undefined,
-        }
-      }))
+        },
+      })),
     };
 
     res.json({ data: responseData });
@@ -338,7 +324,6 @@ exports.getPostById = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
-
 
 // Mendapatkan post berdasarkan title
 exports.getPostByTitle = async (req, res) => {
@@ -400,14 +385,9 @@ exports.getPostByExactTitle = async (req, res) => {
 
 // Membuat post baru
 exports.createPost = async (req, res) => {
-  const {
-    title,
-    category,
-    description,
-    startDate,
-    endDate,
-    maxParticipants,
-  } = req.body;
+  const { title, category, description, startDate, endDate, maxParticipants } =
+    req.body;
+    console.table(req.body)
   const ownerId = req.user.id;
   try {
     let newPost;
@@ -422,13 +402,39 @@ exports.createPost = async (req, res) => {
 
     if (category === 'Event') {
       newPost = await prisma.posts.create({
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          maxParticipants: true,
+          image: true,
+          owner: {
+            select: {
+              email: true,
+              username: true,
+              role: true,
+              profile: {
+                select: {
+                  photo: true,
+                  name: true,
+                  headTitle: true,
+                },
+              },
+            },
+          },
+          participants: true,
+          bookmarks: true,
+        },
         data: {
           title,
           category,
           description,
           startDate,
           endDate,
-          maxParticipants,
+          maxParticipants: +maxParticipants,
           image: fullPath,
           owner: {
             connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
@@ -445,6 +451,7 @@ exports.createPost = async (req, res) => {
           owner: {
             connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
           },
+          bookmarks: true,
         },
       });
     }
@@ -499,7 +506,9 @@ exports.updatePost = async (req, res) => {
 
     // Pastikan hanya owner yang dapat memperbarui post
     if (oldPost.ownerId !== req.user.id) {
-      return res.status(403).json({ msg: 'You are not authorized to update this post' });
+      return res
+        .status(403)
+        .json({ msg: 'You are not authorized to update this post' });
     }
 
     // Periksa apakah ada gambar baru di dalam permintaan
@@ -524,7 +533,15 @@ exports.updatePost = async (req, res) => {
       where: {
         id: req.params.postId,
       },
-      data,
+      data: {
+        title: data.title,
+        category: data.category,
+        description: data.description,
+        image: data.image,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        maxParticipants: +data.maxParticipants,
+      },
     });
 
     res.json({ msg: 'Post updated', data: post });
@@ -644,7 +661,7 @@ exports.getPostsByUser = async (req, res) => {
 };
 // Membuat post bookmark
 exports.createBookmark = async (req, res) => {
-  const { postId } = req.body;
+  const { postId } = req.params;
 
   try {
     // Periksa apakah pengguna telah login
@@ -678,47 +695,28 @@ exports.createBookmark = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
-exports.changePassword = async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
+exports.deleteBookmark = async (req, res) => {
+  const { postId } = req.params;
 
   try {
-    // Verifikasi pengguna
-    const user = await prisma.users.findUnique({
+    // Periksa apakah pengguna telah login
+    const userId = req.user.id;
+
+    // Buat bookmark baru
+    const deleteBookmark = await prisma.bookmarksOnPosts.delete({
       where: {
-        id: req.user.id,
+        postId_userId: {
+          postId,
+          userId,
+        },
       },
     });
 
-    if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
-    }
-
-    // Verifikasi kata sandi lama
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ msg: 'Incorrect old password' });
-    }
-
-    // Validasi kata sandi baru
-    if (newPassword.length < 6) {
-      return res.status(400).json({ msg: 'New password must be at least 6 characters long' });
-    }
-
-    // Enkripsi kata sandi baru
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    // Perbarui kata sandi di basis data
-    await prisma.users.update({
-      where: {
-        id: req.user.id,
-      },
-      data: {
-        password: hashedPassword,
-      },
+    res.json({
+      status: 'success',
+      msg: 'Bookmark deleted',
+      data: deleteBookmark,
     });
-
-    res.json({ msg: 'Password updated successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

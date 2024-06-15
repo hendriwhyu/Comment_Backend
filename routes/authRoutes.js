@@ -33,6 +33,4 @@ router.post(
   AuthController.login
 );
 
-//change passowrd
-router.put('/password', auth, PostsController.changePassword);
 module.exports = router;
