@@ -132,7 +132,6 @@ const UserController = {
   // @access   Private
   updateProfileByAuth: async (req, res) => {
     const { name, headTitle, phone, email, username } = req.body;
-    console.table(req.body);
     try {
       // Update existing profile
       let profileUserUpdate = await prisma.users.update({

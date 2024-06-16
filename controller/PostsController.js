@@ -59,6 +59,8 @@ exports.getPosts = async (req, res) => {
     const totalCount = posts.length;
 
     res.json({
+      status: 'success',
+      msg: 'Posts successfully retrieved',
       total: totalCount,
       pages: +page,
       data: posts,
@@ -243,7 +245,7 @@ exports.getPostsBookmarksByUser = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ msg: 'Internal Server Error' });
   }
 };
 
@@ -299,7 +301,7 @@ exports.getPostById = async (req, res) => {
     });
 
     if (!post) {
-      return res.status(404).json({ msg: 'Post not found' });
+      return res.status(404).json({ status: 'error', msg: 'Post not found' });
     }
 
     // Transform response to exclude password
@@ -318,7 +320,7 @@ exports.getPostById = async (req, res) => {
       })),
     };
 
-    res.json({ data: responseData });
+    res.json({ status: 'success', data: responseData });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -373,7 +375,7 @@ exports.getPostByExactTitle = async (req, res) => {
     });
 
     if (!posts) {
-      return res.status(404).json({ msg: 'posts not found' });
+      return res.status(404).json({ status: 'error', msg: 'posts not found' });
     }
 
     res.json(post);
@@ -387,7 +389,6 @@ exports.getPostByExactTitle = async (req, res) => {
 exports.createPost = async (req, res) => {
   const { title, category, description, startDate, endDate, maxParticipants } =
     req.body;
-    console.table(req.body)
   const ownerId = req.user.id;
   try {
     let newPost;
@@ -443,6 +444,32 @@ exports.createPost = async (req, res) => {
       });
     } else {
       newPost = await prisma.posts.create({
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          maxParticipants: true,
+          image: true,
+          owner: {
+            select: {
+              email: true,
+              username: true,
+              role: true,
+              profile: {
+                select: {
+                  photo: true,
+                  name: true,
+                  headTitle: true,
+                },
+              },
+            },
+          },
+          participants: true,
+          bookmarks: true,
+        },
         data: {
           title,
           category,
@@ -451,7 +478,6 @@ exports.createPost = async (req, res) => {
           owner: {
             connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
           },
-          bookmarks: true,
         },
       });
     }
@@ -544,7 +570,7 @@ exports.updatePost = async (req, res) => {
       },
     });
 
-    res.json({ msg: 'Post updated', data: post });
+    res.json({ status: 'success', msg: 'Post updated', data: post });
   } catch (err) {
     console.error(err.message);
     if (req.file) {
@@ -582,7 +608,7 @@ exports.deletePost = async (req, res) => {
       where: { id: req.params.postId },
     });
 
-    res.json({ msg: 'Post removed' });
+    res.json({ status: 'success', msg: 'Post removed' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -618,7 +644,7 @@ exports.getParticipants = async (req, res) => {
       headTitle: participant.profile.headTitle,
     }));
 
-    res.json(result);
+    res.json({ status: 'success', msg: 'participant fetched', data: result });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -631,6 +657,7 @@ exports.getPostsByUser = async (req, res) => {
     const posts = await prisma.posts.findMany({
       where: { ownerId: userId },
       select: {
+        id: true,
         title: true,
         category: true,
         description: true,
