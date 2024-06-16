@@ -8,7 +8,6 @@ const joinRoutes = require('./routes/userJoinEventRoutes');
 const prisma = require('./utils/Prisma');
 const cleanUpEvents = require('./utils/cleanup');
 const homeRoutes = require('./routes/homeRoutes');
-const router = express.Router();
 
 dotenv.config();
 
@@ -27,7 +26,9 @@ app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/protected', protectedRoutes);
 app.use('/api/events', joinRoutes);
 app.use('/api/home', homeRoutes);
-
+app.get('/', (req, res) => {
+  res.send({ status: 'success', msg: `Server berjalan pada ${process.env.NODE_ENV}` });
+});
 // Start event cleanup process
 cleanUpEvents();
 
@@ -39,9 +40,6 @@ app.listen(PORT, async () => {
   try {
     await prisma.$connect(); // Hubungkan ke database Prisma
     console.log(`Server berjalan pada http://localhost:${PORT}`);
-    router.get('/', (req, res) => {
-      res.send({ status: 'success', msg: `Server berjalan pada ${process.env.NODE_ENV}` });
-    });
   } catch (error) {
     console.error('Koneksi ke database gagal:', error);
   }
