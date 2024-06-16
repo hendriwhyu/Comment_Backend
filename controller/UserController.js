@@ -47,7 +47,17 @@ const UserController = {
               photo: true,
               name: true,
               headTitle: true,
+              phone: true,
             },
+          },
+          recentEvents: {
+            orderBy: {
+              joinDate: 'desc',
+            },
+            include: {
+              posts: true,
+            },
+            take: 5,
           },
         },
       }); // Cari user berdasarkan id
@@ -90,9 +100,9 @@ const UserController = {
                   id: true,
                   username: true,
                   role: true,
-                  profile: true
+                  profile: true,
                 },
-              }
+              },
             },
           },
           posts: {
@@ -103,10 +113,10 @@ const UserController = {
                   id: true,
                   username: true,
                   role: true,
-                  profile: true
+                  profile: true,
                 },
-              }
-            }
+              },
+            },
           },
         },
       });
@@ -121,40 +131,83 @@ const UserController = {
   // @desc     Create or update profile
   // @access   Private
   updateProfileByAuth: async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { photo, name, headTitle, phone } = req.body;
-
+    const { name, headTitle, phone, email, username } = req.body;
     try {
-      // Check if profile exists
-      let profile = await prisma.profiles.findUnique({
-        where: { userId: req.user.id },
-      });
-
-      if (profile) {
-        // Update existing profile
-        profile = await prisma.profiles.update({
-          where: { userId: req.user.id },
-          data: { photo, name, headTitle, phone },
-        });
-        return res.json(profile);
-      }
-
-      // Create new profile
-      profile = await prisma.profiles.create({
+      // Update existing profile
+      let profileUserUpdate = await prisma.users.update({
+        where: { id: req.user.id },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          profile: true,
+        },
         data: {
-          photo,
-          name,
-          headTitle,
-          phone,
-          userId: req.user.id,
+          email,
+          username,
+          profile: {
+            update: {
+              name,
+              headTitle,
+              phone,
+            },
+          },
+        },
+      });
+      return res.json({
+        status: 'success',
+        msg: 'User Profile updated',
+        data: profileUserUpdate,
+      });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
+  },
+
+  changePassword: async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+    try {
+      // Verifikasi pengguna
+      const user = await prisma.users.findUnique({
+        where: {
+          id: req.user.id,
         },
       });
 
-      res.json(profile);
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      // Verifikasi kata sandi lama
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ msg: 'Incorrect old password' });
+      }
+
+      // Validasi kata sandi baru
+      if (newPassword.length < 6) {
+        return res
+          .status(400)
+          .json({ msg: 'New password must be at least 6 characters long' });
+      }
+
+      // Enkripsi kata sandi baru
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      // Perbarui kata sandi di basis data
+      await prisma.users.update({
+        where: {
+          id: req.user.id,
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      res.json({ msg: 'Password updated successfully' });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server error');
@@ -168,16 +221,16 @@ const UserController = {
     try {
       const user = await prisma.users.findUnique({
         where: {
-          id: req.params.userId,
+          id: req.user.id,
         },
       });
 
       if (!user) {
-        return res.status(404).json({ msg: 'Profile not found' });
+        return res.status(404).json({ msg: 'User not found' });
       }
 
       await prisma.users.delete({
-        where: { id: req.params.id },
+        where: { id: req.user.id },
       });
       res.json({ status: 'success', msg: 'User deleted' });
     } catch (err) {
@@ -186,6 +239,5 @@ const UserController = {
     }
   },
 };
-
 
 module.exports = UserController;

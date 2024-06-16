@@ -41,8 +41,8 @@ model UserJoinEvents {
   eventId     String   @db.Uuid
   joinDate    DateTime @db.Timestamptz(6)
   isActive    Boolean
-  posts       Posts    @relation(fields: [eventId], references: [id])
-  owner Users    @relation(fields: [userId], references: [id])
+  posts       Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  owner Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([userId, eventId])
 }
 
@@ -74,9 +74,9 @@ model Comments {
 
 model BookmarksOnPosts {
   userId String @db.Uuid
-  user   Users @relation(fields: [userId], references: [id])
+  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
   postId String @db.Uuid
-  post   Posts @relation(fields: [postId], references: [id])
+  post   Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@id([postId, userId])
 }
 

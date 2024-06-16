@@ -87,17 +87,6 @@ exports.userLeave = async (req, res) => {
   const { eventId } = req.params;
 
   try {
-    const userJoinEvent = await prisma.userJoinEvents.findFirst({
-      where: {
-        userId: userId,
-        eventId: eventId,
-      },
-    });
-
-    if (!userJoinEvent) {
-      return res.status(400).json({ msg: 'Not joined this event' });
-    }
-
     await prisma.userJoinEvents.delete({
       where: {
         userId_eventId: {
