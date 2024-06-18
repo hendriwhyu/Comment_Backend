@@ -4,6 +4,7 @@ const prisma = require('../utils/Prisma');
 const bcrypt = require('bcryptjs');
 
 // Mendapatkan post dengan lazy loading
+
 exports.getPosts = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
 
