@@ -705,6 +705,10 @@ exports.getPostsByUser = async (req, res) => {
         image: true,
         owner: {
           select: {
+            username: true,
+            email: true,
+            id: true,
+            role: true,
             profile: {
               select: {
                 photo: true,
