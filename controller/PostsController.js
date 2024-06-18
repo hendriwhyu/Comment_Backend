@@ -434,10 +434,11 @@ exports.createPost = async (req, res) => {
 
     if (req.file) {
       const originalFileName = path.basename(req.file.path);
+      const fileExtension = path.extname(originalFileName);
       const fileNameWithoutExtension = path.parse(originalFileName).name;
-      const formattedFileName = `${fileNameWithoutExtension}.jpeg`;
+      const formattedFileName = `${fileNameWithoutExtension}${fileExtension}`;
       fullPath = formattedFileName;
-    }
+  }
 
     if (category === 'Event') {
       newPost = await prisma.posts.create({
