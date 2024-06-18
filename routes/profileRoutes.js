@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const auth = require('../middleware/auth');
+const authvolunteer = require('../middleware/auth');
 const UserController = require('../controller/UserController');
 
 // @route    GET api/profile
@@ -10,6 +11,7 @@ const UserController = require('../controller/UserController');
 
 // GET profile
 router.get('/', auth, UserController.getProfileUsers);
+router.get('/', authvolunteer, UserController.getProfileUsers);
 
 router.get('/me', auth, UserController.getUserByToken);
 

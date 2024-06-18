@@ -21,8 +21,8 @@ model Posts {
   updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
   comments        comments[]
   owner           Users             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  participants    UserJoinEvents[]
-  bookmarks       BookmarksOnPosts[]
+  participants    UserJoinEvents[]  @relation(onDelete: Cascade)
+  bookmarks       BookmarksOnPosts[] @relation(onDelete: Cascade)
 }
 
 model Profiles {
@@ -41,8 +41,8 @@ model UserJoinEvents {
   eventId     String   @db.Uuid
   joinDate    DateTime @db.Timestamptz(6)
   isActive    Boolean
-  event       Posts    @relation(fields: [eventId], references: [id])
-  participant Users    @relation(fields: [userId], references: [id])
+  posts       Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  owner Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([userId, eventId])
 }
 
@@ -56,27 +56,27 @@ model Users {
   updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
   profile      Profiles?
   posts        Posts[]
-  comments     comments[]
+  comments     Comments[]
   bookmarksPost BookmarksOnPosts[]
   recentEvents UserJoinEvents[]
 }
 
-model comments {
+model Comments {
   id        String  @id @db.Uuid @default(uuid())
-  eventId   String  @db.Uuid
+  postId   String  @db.Uuid
   content   String  @db.VarChar(255)
-  profileId String? @db.Uuid
+  userId String? @db.Uuid
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
-  Posts     Posts    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  User      Users?   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  posts     Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  owner      Users?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BookmarksOnPosts {
   userId String @db.Uuid
   user   Users @relation(fields: [userId], references: [id])
   postId String @db.Uuid
-  post   Posts @relation(fields: [postId], references: [id])
+  post   Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@id([postId, userId])
 }
 

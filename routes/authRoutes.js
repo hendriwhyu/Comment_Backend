@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const dotenv = require('dotenv');
+const auth = require('../middleware/auth')
 const AuthController = require('../controller/AuthController');
-const authVolunteer = require('../middleware/authVolunteer');
+const PostsController = require('../controller/PostsController')
 
 dotenv.config();
 
@@ -31,11 +32,5 @@ router.post(
   ],
   AuthController.login
 );
-
-// @route    GET api/auth
-// @desc     Get all users
-// @access   Private (requires authVolunteer middleware)
-router.get('/users', authVolunteer, AuthController.getAllUsers);
-router.get('/me', authVolunteer, AuthController.getUserByToken);
 
 module.exports = router;
