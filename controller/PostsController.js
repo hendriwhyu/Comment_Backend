@@ -11,11 +11,42 @@ exports.getPosts = async (req, res) => {
     const offset = (page - 1) * limit;
     const now = new Date();
 
-    // Hapus post yang sudah berakhir
-    await prisma.posts.deleteMany({
+    // Cari post yang sudah berakhir
+    const expiredPosts = await prisma.posts.findMany({
       where: {
         endDate: {
           lt: now,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const expiredPostIds = expiredPosts.map(post => post.id);
+
+    // Hapus entri terkait di BookmarksOnPosts dan UserJoinEvents
+    await prisma.bookmarksOnPosts.deleteMany({
+      where: {
+        postId: {
+          in: expiredPostIds,
+        },
+      },
+    });
+
+    await prisma.userJoinEvents.deleteMany({
+      where: {
+        eventId: {
+          in: expiredPostIds,
+        },
+      },
+    });
+
+    // Hapus post yang sudah berakhir
+    await prisma.posts.deleteMany({
+      where: {
+        id: {
+          in: expiredPostIds,
         },
       },
     });
@@ -56,7 +87,13 @@ exports.getPosts = async (req, res) => {
       },
     });
 
-    const totalCount = posts.length;
+    const totalCount = await prisma.posts.count({
+      where: {
+        endDate: {
+          gte: now,
+        },
+      },
+    });
 
     res.json({
       status: 'success',

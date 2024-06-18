@@ -19,10 +19,10 @@ model Posts {
   ownerId         String            @db.Uuid
   createdAt       DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
-  comments        Comments[]
+  comments        comments[]
   owner           Users             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  participants    UserJoinEvents[]
-  bookmarks       BookmarksOnPosts[]
+  participants    UserJoinEvents[]  @relation(onDelete: Cascade)
+  bookmarks       BookmarksOnPosts[] @relation(onDelete: Cascade)
 }
 
 model Profiles {
@@ -74,7 +74,7 @@ model Comments {
 
 model BookmarksOnPosts {
   userId String @db.Uuid
-  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   Users @relation(fields: [userId], references: [id])
   postId String @db.Uuid
   post   Posts @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@id([postId, userId])
