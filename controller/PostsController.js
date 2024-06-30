@@ -171,7 +171,7 @@ exports.getPostsUpcoming = async (req, res) => {
       where: {
         category: 'Event',
         AND: {
-          startDate: {
+          endDate: {
             gte: new Date(),
           },
         },
@@ -425,106 +425,54 @@ exports.getPostByExactTitle = async (req, res) => {
 
 // Membuat post baru
 exports.createPost = async (req, res) => {
-  const { title, category, description, startDate, endDate, maxParticipants } =
-    req.body;
+  const { title, category, description, startDate, endDate, maxParticipants } = req.body;
   const ownerId = req.user.id;
+  const fullPath = req.file ? path.basename(req.file.path) : null;
+
+  const postData = {
+    title,
+    category,
+    description,
+    startDate: category === 'Event' ? startDate : undefined,
+    endDate: category === 'Event' ? endDate : undefined,
+    maxParticipants: category === 'Event' ? +maxParticipants : undefined,
+    image: fullPath,
+    owner: { connect: { id: ownerId } },
+  };
+
   try {
-    let newPost;
-    let fullPath = null;
-
-    if (req.file) {
-      const originalFileName = path.basename(req.file.path);
-      const fileExtension = path.extname(originalFileName);
-      const fileNameWithoutExtension = path.parse(originalFileName).name;
-      const formattedFileName = `${fileNameWithoutExtension}${fileExtension}`;
-      fullPath = formattedFileName;
-  }
-
-    if (category === 'Event') {
-      newPost = await prisma.posts.create({
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          description: true,
-          startDate: true,
-          endDate: true,
-          maxParticipants: true,
-          image: true,
-          owner: {
-            select: {
-              email: true,
-              username: true,
-              role: true,
-              profile: {
-                select: {
-                  photo: true,
-                  name: true,
-                  headTitle: true,
-                },
+    let newPost = await prisma.posts.create({
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        maxParticipants: true,
+        image: true,
+        owner: {
+          select: {
+            email: true,
+            username: true,
+            role: true,
+            profile: {
+              select: {
+                photo: true,
+                name: true,
+                headTitle: true,
               },
             },
           },
-          participants: true,
-          bookmarks: true,
         },
-        data: {
-          title,
-          category,
-          description,
-          startDate,
-          endDate,
-          maxParticipants: +maxParticipants,
-          image: fullPath,
-          owner: {
-            connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
-          },
-        },
-      });
-    } else {
-      newPost = await prisma.posts.create({
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          description: true,
-          startDate: true,
-          endDate: true,
-          maxParticipants: true,
-          image: true,
-          owner: {
-            select: {
-              email: true,
-              username: true,
-              role: true,
-              profile: {
-                select: {
-                  photo: true,
-                  name: true,
-                  headTitle: true,
-                },
-              },
-            },
-          },
-          participants: true,
-          bookmarks: true,
-        },
-        data: {
-          title,
-          category,
-          description,
-          image: fullPath,
-          owner: {
-            connect: { id: ownerId }, // Anda menggunakan ownerId untuk menghubungkan ke pengguna yang ada
-          },
-        },
-      });
-    }
+        participants: true,
+        bookmarks: true,
+      },
+      data: postData,
+    });
 
     const ownerPost = await prisma.users.findFirst({
-      where: {
-        id: ownerId,
-      },
+      where: { id: ownerId },
       select: {
         profile: {
           select: {
@@ -541,12 +489,8 @@ exports.createPost = async (req, res) => {
   } catch (err) {
     console.error(err.message);
 
-    // Hapus file yang telah diupload jika terjadi error
-    if (req.file) {
-      const tempPath = req.file.path;
-      if (fs.existsSync(tempPath)) {
-        fs.unlinkSync(tempPath);
-      }
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
     }
 
     res.status(500).send('Server error');

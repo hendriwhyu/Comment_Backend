@@ -2,34 +2,35 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const prisma = require('../utils/Prisma');
+const { Prisma } = require('@prisma/client');
 
 const AuthController = {
   register: async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role = 'user' } = req.body;
 
     try {
-      const existingUser = await prisma.users.findUnique({ where: { email } });
+      const existingUser = await prisma.users.findFirst({
+        where: {
+          OR: [{ username }, { email }],
+        },
+      });
 
       if (existingUser) {
-        return res
-          .status(400)
-          .json({ errors: [{ msg: 'User already exists' }] });
+        return res.status(400).json({
+          status: 'error',
+          errors: [{ msg: existingUser.username === username ? 'Username already exists' : 'Email already exists' }],
+        });
       }
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+
       const newUser = await prisma.users.create({
         data: {
           username,
           email,
-          password: hashedPassword,
-          role: role || 'user', // Set role default 'user' jika user tidak diisi
+          password: await bcrypt.hash(password, 10),
+          role,
         },
       });
+
       await prisma.profiles.create({
         data: {
           name: username,
@@ -44,6 +45,7 @@ const AuthController = {
       res.status(500).send('Server error');
     }
   },
+
   login: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
