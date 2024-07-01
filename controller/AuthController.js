@@ -6,7 +6,7 @@ const { Prisma } = require('@prisma/client');
 
 const AuthController = {
   register: async (req, res) => {
-    const { username, email, password, role = 'user' } = req.body;
+    const { username, email, password, role } = req.body;
 
     try {
       const existingUser = await prisma.users.findFirst({
