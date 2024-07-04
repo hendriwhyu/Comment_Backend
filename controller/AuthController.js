@@ -1,14 +1,44 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { validationResult } = require('express-validator');
 const prisma = require('../utils/Prisma');
-const { Prisma } = require('@prisma/client');
+const userSchema = require('../schema/user');
 
 const AuthController = {
   register: async (req, res) => {
-    const { username, email, password, role } = req.body;
-
     try {
+      const registerValidation = userSchema.required({
+        email: true,
+        username: true,
+        password: true,
+        role: true,
+      });
+      if (!req.body.email || !req.body.password || !req.body.username) {
+        return res.status(400).json({
+          status: 'error',
+          errors: [
+            { msg: 'Username is required', path: 'username', type: 'required' },
+            { msg: 'Email is required', path: 'email', type: 'required' },
+            { msg: 'Password is required', path: 'password', type: 'required' }
+          ].filter(error => !req.body[error.path]), // Hanya tampilkan error untuk field yang tidak ada
+        });
+      }
+      // Validate the request data with Zod schema
+      const validateData = registerValidation.safeParse(req.body);
+
+      // Check if validation failed
+      if (!validateData.success) {
+        return res.status(400).json({
+          status: 'error',
+          errors: validateData.error.issues.map((issue) => ({
+            msg: issue.message,
+            path: issue.path.join('.'),
+            type: issue.code,
+          })),
+        });
+      }
+
+      const { username, email, password, role } = validateData.data;
+
       const existingUser = await prisma.users.findFirst({
         where: {
           OR: [{ username }, { email }],
@@ -18,15 +48,25 @@ const AuthController = {
       if (existingUser) {
         return res.status(400).json({
           status: 'error',
-          errors: [{ msg: existingUser.username === username ? 'Username already exists' : 'Email already exists' }],
+          errors: [
+            {
+              msg:
+                existingUser.username === username
+                  ? 'Username already exists'
+                  : 'Email already exists',
+              path: existingUser.username === username ? 'username' : 'email',
+              type: 'unique_violation',
+            },
+          ],
         });
       }
 
+      const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = await prisma.users.create({
         data: {
           username,
           email,
-          password: await bcrypt.hash(password, 10),
+          password: hashedPassword,
           role,
         },
       });
@@ -39,22 +79,53 @@ const AuthController = {
         },
       });
 
-      res.json({ status: 'success', message: 'User created successfully' });
+      res.json({
+        status: 'success',
+        message: 'User created successfully',
+        userId: newUser.id,
+      });
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      res.status(500).json({
+        status: 'error',
+        message: 'Server error',
+        details: err.message,
+      });
     }
   },
 
   login: async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password } = req.body;
-
     try {
+      const loginValidation = userSchema.pick({
+        email: true,
+        password: true,
+      });
+
+      if (!req.body.email || !req.body.password) {
+        return res.status(400).json({
+          status: 'error',
+          errors: [
+            { msg: 'Email is required', path: 'email', type: 'required' },
+            { msg: 'Password is required', path: 'password', type: 'required' }
+          ].filter(error => !req.body[error.path]), // Hanya tampilkan error untuk field yang tidak ada
+        });
+      }
+
+      const validateData = loginValidation.safeParse(req.body);
+
+      if (!validateData.success) {
+        return res.status(400).json({
+          status: 'error',
+          errors: validateData.error.issues.map((issue) => ({
+            msg: issue.message,
+            path: issue.path.join('.'),
+            type: issue.code,
+          })),
+        });
+      }
+
+      const { email, password } = validateData.data;
+
       const user = await prisma.users.findUnique({ where: { email } });
 
       if (!user) {
